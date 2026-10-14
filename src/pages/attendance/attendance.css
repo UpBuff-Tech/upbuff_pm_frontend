@@ -1,0 +1,893 @@
+/* Attendance page (Attendance.jsx): header, KPI tiles, toolbar and a themed FullCalendar */
+
+/* Status colours shared by legend chips and calendar events */
+.att-present { --att: #16a34a; }
+.att-late { --att: #d97706; }
+.att-working { --att: #2563eb; }
+.att-leave { --att: #4f46e5; }
+.att-wfh { --att: #0891b2; }
+.att-absent { --att: #dc2626; }
+
+/* ---- Header ---- */
+.att-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.att-office {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.att-office-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--fx-border);
+  border-radius: 999px;
+  background: var(--fx-surface);
+  color: var(--fx-text-muted);
+  font-size: 0.8125rem;
+}
+
+.att-office-chip i {
+  color: var(--fx-primary);
+  font-size: 1rem;
+}
+
+.att-office-chip strong {
+  color: var(--fx-text);
+  font-weight: 600;
+}
+
+.att-office-muted i {
+  color: var(--fx-text-subtle);
+}
+
+/* ---- KPI tiles ---- */
+.att-kpi {
+  --tone: var(--fx-primary);
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  overflow: hidden;
+}
+
+.att-kpi::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tone) 12%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.att-kpi.tone-indigo { --tone: #4f46e5; }
+.att-kpi.tone-amber { --tone: #d97706; }
+.att-kpi.tone-cyan { --tone: #0891b2; }
+.att-kpi.tone-green { --tone: #16a34a; }
+
+.att-kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tone) 12%, #fff);
+  color: var(--tone);
+  font-size: 1.6rem;
+}
+
+.att-kpi-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.att-kpi-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fx-text-muted);
+}
+
+.att-kpi-value {
+  margin: 2px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fx-text);
+}
+
+.att-kpi-note {
+  font-size: 0.75rem;
+  color: var(--fx-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-sk-value {
+  display: inline-block;
+  width: 90px;
+  height: 26px;
+}
+
+/* On-time ring (--pct: 0-100) */
+.att-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--tone) calc(var(--pct, 0) * 1%), color-mix(in srgb, var(--tone) 14%, #fff) 0);
+}
+
+.att-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.att-ring span {
+  position: relative;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tone);
+}
+
+/* ---- Calendar card + toolbar ---- */
+.att-calendar-card {
+  overflow: hidden;
+}
+
+.att-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--fx-border);
+  background: var(--fx-surface-alt);
+}
+
+.att-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.att-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 260px;
+}
+
+.att-filter > i {
+  color: var(--fx-text-muted);
+  font-size: 1.1rem;
+}
+
+.att-filter .select2-container {
+  flex: 1;
+}
+
+.att-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--att) 10%, #fff);
+  color: color-mix(in srgb, var(--att) 80%, #000);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.att-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--att, #64748b);
+}
+
+/* Month / List segmented control: a thumb slides under the active option */
+.att-view-toggle {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  flex-shrink: 0;
+  padding: 3px;
+  border: 1px solid var(--fx-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--fx-shadow-xs);
+}
+
+.att-view-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 7px;
+  background: var(--fx-primary);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.att-view-toggle.is-list .att-view-thumb {
+  transform: translateX(100%);
+}
+
+.att-view-toggle button {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  min-width: 84px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fx-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.att-view-toggle button i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.att-view-toggle button:hover:not(.active) {
+  color: var(--fx-text);
+}
+
+.att-view-toggle button.active {
+  color: #fff;
+  cursor: default;
+}
+
+.att-view-toggle button:focus-visible {
+  outline-offset: 1px;
+}
+
+@media (max-width: 767.98px) {
+  .att-toolbar { align-items: stretch; }
+  .att-view-toggle { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .att-view-thumb { transition: none; }
+}
+
+.att-calendar-body {
+  padding: 18px;
+}
+
+/* ============================================================================
+   FullCalendar theme
+   ========================================================================== */
+.att-calendar {
+  --fc-border-color: #eef2f6;
+  --fc-today-bg-color: transparent;
+  --fc-page-bg-color: #fff;
+  --fc-neutral-bg-color: #f8fafc;
+  --fc-list-event-hover-bg-color: #f8fafc;
+  font-size: 0.8125rem;
+}
+
+/* Toolbar: big month title on the left, Today + arrows on the right */
+.att-calendar .fc-header-toolbar.fc-toolbar {
+  margin-bottom: 14px !important;
+}
+
+.att-calendar .fc-toolbar-title {
+  font-size: 1.375rem !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fx-text);
+}
+
+.att-calendar .fc .fc-button,
+.att-calendar .fc-button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--fx-border) !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: var(--fx-text-body) !important;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: none !important;
+}
+
+.att-calendar .fc-button:hover {
+  background: var(--fx-surface-hover) !important;
+  color: var(--fx-text) !important;
+}
+
+.att-calendar .fc-button:disabled {
+  opacity: 0.5;
+}
+
+.att-calendar .fc-button-group {
+  gap: 4px;
+}
+
+.att-calendar .fc-prev-button,
+.att-calendar .fc-next-button {
+  width: 34px;
+  padding: 0;
+}
+
+.att-calendar .fc-today-button {
+  margin-right: 8px !important;
+}
+
+/* Grid */
+.att-calendar .fc-scrollgrid {
+  border-radius: 14px;
+  overflow: hidden;
+  border-color: var(--fc-border-color) !important;
+}
+
+.att-calendar .fc-col-header-cell {
+  padding: 10px 0;
+  background: #f8fafc;
+  border-color: var(--fc-border-color);
+}
+
+.att-calendar .fc-col-header-cell-cushion {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fx-text-muted);
+  text-decoration: none;
+}
+
+.att-calendar .fc-daygrid-day {
+  transition: background-color 0.15s ease;
+}
+
+.att-calendar .fc-daygrid-day:hover {
+  background: #fafbff;
+}
+
+.att-calendar .fc-daygrid-day.att-weekend {
+  background: repeating-linear-gradient(135deg, #fafbfc 0 8px, #f5f7fa 8px 16px);
+}
+
+.att-calendar .fc-daygrid-day-frame {
+  min-height: 108px;
+  padding: 4px;
+}
+
+.att-calendar .fc-daygrid-day-top {
+  flex-direction: row;
+  padding: 2px 2px 4px;
+}
+
+.att-calendar .fc-daygrid-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: var(--fx-text-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.att-calendar .fc-day-other .fc-daygrid-day-number {
+  color: #cbd5e1;
+}
+
+.att-calendar .fc-day-today .fc-daygrid-day-number {
+  background: var(--fx-primary);
+  color: #fff;
+  box-shadow: 0 4px 10px -3px rgba(79, 70, 229, 0.6);
+}
+
+.att-calendar .fc-day-today {
+  background: color-mix(in srgb, var(--fx-primary) 3%, #fff) !important;
+}
+
+/* Event chips */
+.att-calendar .fc-event.att-event {
+  margin: 1px 2px 3px !important;
+  padding: 3px 6px;
+  border: 0 !important;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--att) 10%, #fff) !important;
+  color: color-mix(in srgb, var(--att) 80%, #000) !important;
+  box-shadow: inset 2px 0 0 var(--att);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* FullCalendar sets its own (white / inline) text colour on the event body */
+.att-calendar .fc-event.att-event .fc-event-main,
+.att-calendar .fc-event.att-event .fc-event-main-frame {
+  color: color-mix(in srgb, var(--att) 80%, #000) !important;
+}
+
+.att-calendar .fc-event.att-event:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 2px 0 0 var(--att), 0 4px 10px -4px color-mix(in srgb, var(--att) 60%, transparent);
+}
+
+.att-calendar .fc-daygrid-event .att-dot {
+  display: none;
+}
+
+.att-calendar .fc-daygrid-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.att-calendar .att-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.att-calendar .att-time {
+  margin-left: auto;
+  padding-left: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.att-calendar .fc-daygrid-more-link {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--fx-surface-hover);
+  color: var(--fx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.att-calendar .fc-popover {
+  border: 1px solid var(--fx-border);
+  border-radius: 12px;
+  box-shadow: var(--fx-shadow-lg);
+  overflow: hidden;
+}
+
+.att-calendar .fc-popover-header {
+  padding: 8px 10px;
+  background: var(--fx-surface-alt);
+  font-weight: 600;
+}
+
+/* List view */
+.att-calendar .fc-list {
+  border: 1px solid var(--fc-border-color) !important;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.att-calendar .fc-list-day-cushion {
+  padding: 10px 14px !important;
+  background: #f8fafc !important;
+}
+
+.att-calendar .fc-list-day-text,
+.att-calendar .fc-list-day-side-text {
+  color: var(--fx-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.att-calendar .fc-list-day-side-text {
+  color: var(--fx-text-muted);
+  font-weight: 500;
+}
+
+.att-calendar .fc-list-event td {
+  padding: 10px 14px;
+  border-color: var(--fc-border-color);
+}
+
+.att-calendar .fc-list-event-graphic {
+  display: none;
+}
+
+.att-calendar .fc-list-event.att-event {
+  background: #fff !important;
+  box-shadow: none;
+  transform: none !important;
+}
+
+.att-calendar .fc-list-event-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.att-calendar .fc-list-event .att-dot {
+  width: 9px;
+  height: 9px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--att) 18%, transparent);
+}
+
+.att-calendar .fc-list-event .att-label {
+  font-size: 0.875rem;
+  color: var(--fx-text);
+}
+
+.att-calendar .fc-list-event .att-time {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--att) 10%, #fff);
+  color: color-mix(in srgb, var(--att) 80%, #000);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.att-calendar .fc-list-event-time {
+  color: var(--fx-text-muted);
+}
+
+/* ---- Loading: placeholder month grid ---- */
+.att-cal-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.att-cal-sk-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.att-cal-sk-head .fx-skeleton:first-child { width: 180px; height: 28px; }
+.att-cal-sk-head .fx-skeleton:last-child { width: 140px; height: 34px; }
+
+.att-cal-sk-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid #eef2f6;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.att-cal-sk-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 96px;
+  padding: 8px;
+  border-right: 1px solid #eef2f6;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.att-cal-sk-num { width: 22px; height: 22px; border-radius: 50% !important; }
+.att-cal-sk-event { width: 85%; height: 16px; border-radius: 6px !important; }
+
+@media (max-width: 767.98px) {
+  .att-calendar .fc-header-toolbar { flex-direction: column; gap: 10px; align-items: flex-start !important; }
+  .att-calendar .fc-daygrid-day-frame { min-height: 72px; }
+  .att-calendar .att-time { display: none; }
+  .att-filter { width: 100%; }
+}
+
+/* ============================================================================
+   "All employees" month view: one summary per day
+   ========================================================================== */
+.att-calendar .fc-event.att-day-summary {
+  margin: 2px 3px 4px !important;
+  padding: 6px 6px 5px;
+  border: 1px solid #e6eaf0 !important;
+  border-radius: 10px;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
+.att-calendar .fc-event.att-day-summary:hover {
+  border-color: #c7d2fe !important;
+  box-shadow: 0 6px 14px -8px rgba(79, 70, 229, 0.45);
+  transform: translateY(-1px);
+}
+
+.att-calendar .fc-event.att-day-summary .fc-event-main {
+  color: var(--fx-text) !important;
+}
+
+.att-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.att-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.att-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--att) 11%, #fff);
+  color: color-mix(in srgb, var(--att) 80%, #000);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.att-summary-pill .att-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.att-summary-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--fx-text-muted);
+}
+
+.att-summary-foot i {
+  font-size: 0.95rem;
+  color: var(--fx-text-subtle);
+}
+
+/* Any "+N more" popover that does appear scrolls instead of overflowing */
+.att-calendar .fc-popover-body {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   Day panel (AttendanceDayModal.jsx)
+   ========================================================================== */
+.att-day-modal .modal-dialog {
+  max-width: 720px;
+}
+
+.att-day-modal .modal-content {
+  max-height: min(720px, calc(100vh - 3.5rem));
+}
+
+.att-day-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 1.5rem;
+  border-bottom: 1px solid var(--fx-border);
+  background: var(--fx-surface-alt);
+}
+
+.att-day-search {
+  position: relative;
+}
+
+.att-day-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fx-text-subtle);
+  font-size: 1.1rem;
+}
+
+.att-day-search .form-control {
+  padding-left: 36px;
+  border-radius: 10px;
+}
+
+.att-day-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.att-day-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--fx-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--fx-text-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.att-day-tab b {
+  font-weight: 700;
+}
+
+.att-day-tab.active {
+  border-color: color-mix(in srgb, var(--att, #4f46e5) 45%, transparent);
+  background: color-mix(in srgb, var(--att, #4f46e5) 10%, #fff);
+  color: color-mix(in srgb, var(--att, #4f46e5) 80%, #000);
+}
+
+/* The modal body scrolls (modal-dialog-scrollable); the header and tools stay put */
+.att-day-body {
+  padding: 8px 12px 12px;
+}
+
+.att-day-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.att-day-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.att-day-row:hover,
+.att-day-row:focus-visible {
+  background: var(--fx-surface-alt);
+  outline: none;
+}
+
+.att-day-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--att) 12%, #fff);
+  color: color-mix(in srgb, var(--att) 85%, #000);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.att-day-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  flex: 0 0 200px;
+}
+
+.att-day-name strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: var(--fx-text);
+}
+
+.att-day-name .att-chip {
+  padding: 1px 8px;
+  font-size: 0.6875rem;
+}
+
+.att-day-times {
+  display: flex;
+  flex: 1;
+  gap: 18px;
+}
+
+.att-day-times span {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fx-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.att-day-times small {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--fx-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.att-day-note {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--fx-text-muted);
+}
+
+.att-day-caret {
+  color: var(--fx-text-subtle);
+  font-size: 1.2rem;
+}
+
+.att-day-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 2.5rem 1rem;
+  color: var(--fx-text-subtle);
+  font-size: 0.875rem;
+}
+
+.att-day-empty i {
+  font-size: 1.75rem;
+}
+
+@media (max-width: 575.98px) {
+  .att-day-row { flex-wrap: wrap; }
+  .att-day-name { flex: 1 1 auto; }
+  .att-day-times { flex-basis: 100%; padding-left: 50px; }
+}

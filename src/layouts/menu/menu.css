@@ -1,0 +1,270 @@
+/* ============================================================================
+   Sidebar
+   Expanded (labels) by default; html.fx-sidebar-collapsed turns it into an
+   icon rail on desktop. Below 1200px it slides in over the page
+   (html.fx-sidebar-open). See layouts/sidebarState.js.
+   ========================================================================== */
+
+.fx-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1080;
+  width: var(--fx-sidebar-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--fx-sidebar-bg);
+  color: var(--fx-sidebar-text);
+  border-right: 1px solid rgba(148, 163, 184, 0.08);
+  transition: width 0.2s ease, transform 0.25s ease;
+}
+
+/* Page sits to the right of the sidebar */
+.layout-wrapper .layout-page {
+  padding-left: var(--fx-sidebar-w) !important;
+  transition: padding-left 0.2s ease;
+}
+
+/* ---- Brand ---- */
+.fx-sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: var(--fx-topbar-h);
+  padding: 0 1.25rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.fx-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.fx-sidebar-logo img {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.fx-sidebar-wordmark {
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.fx-sidebar-wordmark small {
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Navigation ---- */
+.fx-sidebar-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem 0.75rem 1rem;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+.fx-sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.25);
+}
+
+.fx-nav-section + .fx-nav-section {
+  margin-top: 1rem;
+}
+
+.fx-nav-heading {
+  padding: 0 0.75rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.fx-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fx-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 38px;
+  padding: 0 0.75rem;
+  margin-bottom: 2px;
+  border-radius: 8px;
+  color: var(--fx-sidebar-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fx-nav-link i {
+  flex-shrink: 0;
+  width: 20px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.fx-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fx-nav-link:hover,
+.fx-nav-link:focus-visible {
+  background: var(--fx-sidebar-hover);
+  color: var(--fx-sidebar-text-strong);
+}
+
+.fx-nav-link.active {
+  background: var(--fx-sidebar-active);
+  color: #fff;
+}
+
+.fx-nav-link.active i {
+  color: #a5b4fc;
+}
+
+.fx-nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #818cf8;
+}
+
+/* Unread notifications count (NotificationBadge sets inline position styles) */
+.fx-nav-link .badge {
+  position: static !important;
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0.2rem 0.4rem !important;
+  font-size: 0.6875rem !important;
+}
+
+/* ---- Tooltip shown next to items when collapsed ---- */
+#menu-hover-tooltip {
+  display: none;
+  position: fixed;
+  transform: translateY(-50%);
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  z-index: 10000;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.fx-sidebar-backdrop {
+  display: none;
+}
+
+/* ============================================================================
+   Collapsed rail (desktop)
+   ========================================================================== */
+@media (min-width: 1200px) {
+  html.fx-sidebar-collapsed .fx-sidebar {
+    width: var(--fx-sidebar-w-collapsed);
+  }
+
+  html.fx-sidebar-collapsed .layout-wrapper .layout-page {
+    padding-left: var(--fx-sidebar-w-collapsed) !important;
+  }
+
+  html.fx-sidebar-collapsed .fx-sidebar-brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  html.fx-sidebar-collapsed .fx-sidebar-wordmark {
+    display: none;
+  }
+
+  html.fx-sidebar-collapsed .fx-nav-heading {
+    height: 1px;
+    padding: 0;
+    margin: 0.5rem 0.75rem;
+    overflow: hidden;
+    color: transparent;
+    background: rgba(148, 163, 184, 0.12);
+  }
+
+  html.fx-sidebar-collapsed .fx-nav-section + .fx-nav-section {
+    margin-top: 0;
+  }
+
+  html.fx-sidebar-collapsed .fx-nav-link {
+    justify-content: center;
+    padding: 0;
+  }
+
+  html.fx-sidebar-collapsed .fx-nav-label {
+    display: none;
+  }
+
+  html.fx-sidebar-collapsed .fx-nav-link .badge {
+    position: absolute !important;
+    top: 3px;
+    right: 6px;
+    min-width: 16px;
+    padding: 0.1rem 0.3rem !important;
+    font-size: 0.625rem !important;
+  }
+}
+
+/* ============================================================================
+   Small screens: off-canvas
+   ========================================================================== */
+@media (max-width: 1199.98px) {
+  .fx-sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  html.fx-sidebar-open .fx-sidebar {
+    transform: translateX(0);
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.35);
+  }
+
+  .layout-wrapper .layout-page {
+    padding-left: 0 !important;
+  }
+
+  html.fx-sidebar-open .fx-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1079;
+    background: rgba(15, 23, 42, 0.45);
+  }
+}

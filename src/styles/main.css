@@ -1,0 +1,709 @@
+/* FullCalendar Styles */
+/* FullCalendar 6 adds its own styles from JavaScript; the old @import lines pointed to files
+   that do not exist in version 6 (the browser got a 404 for them), so they are left out. */
+
+.asteric_red {
+  color: red;
+}
+#mapContainer {
+  height: 600px;
+  width: 100%;
+  display: block;
+}
+/* Start For toaster */
+#toast {
+  visibility: hidden;
+  max-width: 50px;
+  height: 50px;
+  /*margin-left: -125px;*/
+  margin: auto;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 2px;
+
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: 30px;
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+#toast #img {
+  width: 50px;
+  height: 50px;
+
+  float: left;
+
+  padding-top: 16px;
+  padding-bottom: 16px;
+
+  box-sizing: border-box;
+
+
+  background-color: #111;
+  color: #fff;
+}
+
+#toast #desc {
+
+
+  color: #fff;
+
+  padding: 16px;
+
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#toast.show {
+  visibility: visible;
+  -webkit-animation: fadein 0.5s, expand 0.5s 0.5s, stay 3s 1s, shrink 0.5s 2s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, expand 0.5s 0.5s, stay 3s 1s, shrink 0.5s 4s, fadeout 0.5s 4.5s;
+}
+
+.filterButton {
+  background: #fff !important;
+  border-radius: 50px !important;
+  padding: 9px 14px !important;
+  color: #1E88E5;
+  box-shadow: 3px 4px 12px 0px #d0d0d0 !important;
+}
+
+.danger-color{
+  color: red !important;
+}
+.success-color
+{
+color: #28a745 !important;
+}
+.primary-color
+{
+  color: blue !important;
+}
+
+ 
+
+.alertButton {
+  top: 0;
+  position:absolute;
+  right: 0;
+  z-index: 2;
+  padding: 1.171875rem 0.9375rem !important;
+  box-sizing: content-box;
+  width: 0.8em;
+  height: 0.8em;
+  padding: 0.25em 0.25em;
+  color: #94a3b8;
+  background: transparent url("data:image/svg+xml,%3Csvg width='150px' height='151px' viewBox='0 0 150 151' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cdefs%3E%3Cpolygon id='path-1' points='131.251657 0 74.9933705 56.25 18.7483426 0 0 18.75 56.2450278 75 0 131.25 18.7483426 150 74.9933705 93.75 131.251657 150 150 131.25 93.7549722 75 150 18.75'%3E%3C/polygon%3E%3C/defs%3E%3Cg id='🎨-%5BSetup%5D:-Colors-&amp;-Shadows' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='Artboard' transform='translate%28-225.000000, -250.000000%29'%3E%3Cg id='Icon-Color' transform='translate%28225.000000, 250.500000%29'%3E%3Cuse fill='%2394a3b8' xlink:href='%23path-1'%3E%3C/use%3E%3Cuse fill-opacity='0.5' fill='%2394a3b8' xlink:href='%23path-1'%3E%3C/use%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E") center/0.8em auto no-repeat;
+  border: 0;
+  border-radius: 0.375rem;
+  opacity: 0.95;
+  background-image: url("data:image/svg+xml,%3Csvg width='150px' height='151px' viewBox='0 0 150 151' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cdefs%3E%3Cpolygon id='path-1' points='131.251657 0 74.9933705 56.25 18.7483426 0 0 18.75 56.2450278 75 0 131.25 18.7483426 150 74.9933705 93.75 131.251657 150 150 131.25 93.7549722 75 150 18.75'%3E%3C/polygon%3E%3C/defs%3E%3Cg id='🎨-%5BSetup%5D:-Colors-&amp;-Shadows' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='Artboard' transform='translate(-225.000000, -250.000000)'%3E%3Cg id='Icon-Color' transform='translate(225.000000, 250.500000)'%3E%3Cuse fill='%230f172a' xlink:href='%23path-1'%3E%3C/use%3E%3Cuse fill-opacity='0.5' fill='%230f172a' xlink:href='%23path-1'%3E%3C/use%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.toast-error{
+ background: rgb(255, 32, 32);
+ background-image: none !important;
+  /* border-left: 10px solid rgb(251, 75, 75) !important; */
+}
+.toast-success{
+  background: rgb(19, 193, 48);
+ }
+.toast-message{
+  color: rgb(255, 255, 255);
+  font-size: 14px;
+ }
+
+ .toast-title{
+   font-weight: bold;
+  color: rgb(255, 255, 255);
+ }
+ 
+ .topBarActive{
+   background-color: #28a745 !important;
+ }
+
+ .blueStatus {
+  padding: 4px 12px;
+  background: rgb(236, 240, 245);
+  font-weight: 800;
+  color: rgb(0, 102, 255);
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.blueDot {
+  height: 7px;
+  width: 7px;
+  background-color: rgb(0, 102, 255);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.redStatus {
+  padding: 4px 12px;
+  background: rgb(255, 215, 215);
+  color: rgb(244, 67, 54);
+  font-weight: 800;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.redDot {
+  height: 7px;
+  width: 7px;
+  background-color: rgb(244, 67, 54);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.greenStatus {
+  padding: 4px 12px;
+  background: rgb(215, 255, 244);
+  color: rgb(76, 175, 80);
+  border-radius: 4px;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.greenDot {
+  height: 7px;
+  width: 7px;
+  background-color: rgb(76, 175, 80);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.orangeStatus {
+  padding: 4px 12px;
+  background: rgb(255, 235, 215);
+  color: rgb(245, 124, 0);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.orangeDot {
+  height: 7px;
+  width: 7px;
+  background-color: rgb(245, 124, 0);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* ==============
+  Pagination
+===================*/
+/* Pagination wrapper: center it on every page (previously right-aligned on some
+   pages via flex-end, which is why pagination sat left/middle/right depending on
+   the page). Now uniform across the app. */
+.text-right{
+  display: flex;
+  justify-content: center;
+  padding-top: 2em;
+}
+/* ============================================================================
+   Global pagination — one modern "pill" style shared by every page (ticket list,
+   client tasks, and any future paginated view). Covers both markup variants used
+   in the app: Bootstrap's .page-item.active and the older .pagination li.active.
+   ========================================================================== */
+.pagination {
+  gap: 6px;
+  flex-wrap: wrap;
+  /* Center the pagination bar within whatever wrapper a page uses (text-center,
+     text-right, or none). The auto margins center it even inside a flex wrapper
+     that would otherwise push it to one side — so every page aligns the same. */
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.pagination .page-link {
+  border: 1px solid #e4e6ef !important;
+  border-radius: 8px !important;
+  color: #334155 !important;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  font-weight: 500;
+  background-color: #fff !important;
+  transition: all 0.15s ease;
+}
+.pagination .page-link:focus,
+.pagination .page-link:hover {
+  background-color: #f0f0ff !important;
+  border-color: #4f46e5 !important;
+  color: #4f46e5 !important;
+}
+.pagination .page-link:focus {
+  box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.25) !important;
+}
+/* Active page — brand purple, raised */
+.pagination .page-item.active .page-link,
+.pagination li.active .page-link {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  color: #fff !important;
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.4);
+}
+/* Disabled Previous/Next */
+.pagination .page-item.disabled .page-link,
+.pagination li.disabled .page-link {
+  color: #a7acb9 !important;
+  background-color: #f9fafd !important;
+  border-color: #e4e6ef !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.previous-page, .next-page {
+  color: #334155 !important;
+  background-color: #fff !important;
+}
+
+.previous-page:focus,
+.previous-page :hover {
+  color: #354558 !important;
+  background-color: #d1d4d7 !important;
+}
+
+ /* 
+ for cash invoice report page - print modal
+ created by aswin
+ */
+.table27_06_22{
+  /* border: 1px solid; */
+  border-collapse: collapse;
+  text-align: center;
+}
+/* .table27_06_22 td, th{
+  border: 1px solid;
+  border-collapse: collapse;
+  text-align: center;
+} */
+.table27_06_22 td, th{
+  /* border-right: 1px solid ; */
+  border-collapse: collapse;
+  text-align: center;
+}
+.table27_06_22 th{
+  /* border-width: 1px */
+ }
+
+ /* .table27_06_22 tr{
+    height: 10px!important;
+ } */
+
+.table_28_06_22{
+  width:100%; 
+  right:0px; 
+  height: auto;
+  font-family:'Tahoma', Times, serif; 
+  /* border: 1px solid #000; */
+}
+
+.printSection2{
+  width: 21cm;
+  height: 29.7cm;
+  height: 100%; 
+  border: 1px solid;
+}
+
+iframe{
+  display: none;
+}
+
+.imageOk{
+  text-align: center;
+  background: #51be6c;
+  color: #fff;
+  width: 50%;
+  border-radius: 50px;
+  margin: 0 auto;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px;
+
+}
+.imageNotOk{
+  text-align: center;
+    background: #ed7b7b;
+    color: #ffffff;
+    width: 50%;
+  border-radius: 50px;
+  margin: 0 auto;
+  text-transform: uppercase;
+  font-size: 11px;
+  padding: 3px;
+}
+
+/* Timer Display Styles */
+.timer-display {
+  padding: 5px 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 1.1rem;
+}
+
+/* Timeline Styles for Activity Log */
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e0e0e0;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #4f46e5;
+  z-index: 1;
+}
+
+.timeline-item.timeline-status::before {
+  border-color: #0891b2;
+}
+
+.timeline-item.timeline-comment::before {
+  border-color: #16a34a;
+}
+
+.timeline-item.timeline-assignment::before {
+  border-color: #d97706;
+}
+
+.timeline-item.timeline-timer::before {
+  border-color: #64748b;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-left: 10px;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.timeline-time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Comment Styles */
+.comment-item {
+  background: #f8f9fa;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border-left: 3px solid #4f46e5;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #334155;
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.comment-text {
+  color: #334155;
+  line-height: 1.5;
+}
+
+/* Attachment Styles */
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border-left: 3px solid #0891b2;
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+}
+
+.attachment-icon {
+  font-size: 1.5rem;
+  margin-right: 12px;
+  color: #0891b2;
+}
+
+.attachment-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.attachment-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Tab Badge Styles */
+.nav-tabs .badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+}
+
+/* Extra Small Button Styles for Task Cards */
+.btn-xs {
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 3px;
+  min-width: 28px;
+}
+
+.btn-xs i {
+  font-size: 0.7rem;
+}
+
+/* Timer Display on Cards */
+.task-timer-display {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+/* Client View - Status Filter Cards */
+.status-filter-card {
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.status-filter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #4f46e5;
+}
+
+.status-filter-card.active {
+  border-color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  background-color: #f5f5ff;
+}
+
+/* Client View - Task Cards */
+.task-client-card {
+  transition: all 0.2s ease;
+  border: 1px solid #e7e7e7;
+}
+
+.task-client-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  border-color: #4f46e5;
+}
+
+.task-client-card .card-body {
+  min-height: 140px;
+}
+
+/* Priority Dropdown Styles */
+.task-priority-select {
+  cursor: pointer;
+  border: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.task-priority-select:hover {
+  border-color: #4f46e5;
+}
+
+.task-priority-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.25);
+}
+
+.task-priority-select option[value="Critical"] {
+  background-color: #ffebee;
+  color: #dc3545;
+}
+
+.task-priority-select option[value="High"] {
+  background-color: #fff3e0;
+  color: #fd7e14;
+}
+
+.task-priority-select option[value="Medium"] {
+  background-color: #e3f2fd;
+  color: #0dcaf0;
+}
+
+.task-priority-select option[value="Low"] {
+  background-color: #f5f5f5;
+  color: #6c757d;
+}
+
+/* ==============
+  Login Page Styles
+===================*/
+/* Hide the sidebar menu on login page */
+.authentication-wrapper ~ #layout-menu,
+.authentication-basic #layout-menu,
+.authentication-basic .layout-menu,
+.authentication-basic .menu-profile,
+.authentication-basic .menu-inner,
+.authentication-basic aside.layout-menu {
+  display: none !important;
+}
+
+/* Ensure login page takes full width */
+.authentication-basic .layout-page {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* ==============
+  Select2 - Match Bootstrap form-control height
+===================*/
+.select2-container .select2-selection--single {
+  height: 38px !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height: 36px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 36px;
+}
+
+.select2-container .select2-selection--multiple {
+  min-height: 38px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.attachment-dropzone {
+  border: 2px dashed #c7c9d9;
+  border-radius: 10px;
+  background: #f8f8ff;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.attachment-dropzone:hover, .attachment-dropzone.drag-over {
+  border-color: #4f46e5;
+  background: #ededff;
+}
+.attachment-dropzone-icon {
+  font-size: 2rem;
+  color: #a0a3b5;
+  display: block;
+  margin-bottom: 6px;
+}
+.attachment-dropzone-text {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+.attachment-dropzone-hint {
+  font-size: 0.75rem;
+  color: #adb5bd;
+  margin-top: 8px;
+}
+.attachment-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid #e7e7e8;
+  background: #fff;
+  transition: background 0.15s;
+}
+.attachment-file-item:hover { background: #f8f8ff; }
+.attachment-file-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.attachment-file-icon.icon-image { background: #fff0f6; color: #e91e8c; }
+.attachment-file-icon.icon-pdf   { background: #fff3f0; color: #f44336; }
+.attachment-file-icon.icon-word  { background: #f0f4ff; color: #1565c0; }
+.attachment-file-icon.icon-excel { background: #f0fff4; color: #2e7d32; }
+.attachment-file-icon.icon-zip   { background: #fffde7; color: #f57f17; }
+.attachment-file-icon.icon-text  { background: #f5f5f5; color: #607d8b; }
+.attachment-file-icon.icon-other { background: #f3f0ff; color: #7c3aed; }
+
+
+/* ---- from client/main.less ---- */
+form > div > input.validation[type="text"]:focus + label,
+form > div > input.validation[type="email"]:focus + label,
+form > div > input.validation[type="password"]:focus + label { opacity: 0; }
+form > div > input.validation[type="text"]:invalid:not(:focus):not(:placeholder-shown),
+form > div > input.validation[type="email"]:invalid:not(:focus):not(:placeholder-shown),
+form > div > input.validation[type="password"]:invalid:not(:focus):not(:placeholder-shown) { border: 1px solid #ff0b0bb3; }
+form > div > input.validation[type="text"]:invalid:not(:focus):not(:placeholder-shown) + label,
+form > div > input.validation[type="email"]:invalid:not(:focus):not(:placeholder-shown) + label,
+form > div > input.validation[type="password"]:invalid:not(:focus):not(:placeholder-shown) + label { opacity: 0; }
+
+/* ---- from imports/ui/stylesheets/not-found.less ---- */
+#not-found { width: 700px; margin: 0 auto; }
+#not-found .not-found-image { width: 25%; float: left; }
+#not-found .not-found-title { width: 70%; float: right; background: url(/img/bg-footer.svg); background-repeat: no-repeat; background-position: center; background-size: contain; min-height: 400px; }
+#not-found .not-found-title h1 { font-size: 30px; color: #1f2128; margin-bottom: 20px; margin-top: 155px; }
+#not-found .not-found-title a.gotohomepage { background-color: #de4f4f; color: #fff; width: 180px; line-height: 40px; display: block; text-align: center; font-size: 14px; text-decoration: none; text-transform: uppercase; height: 40px; }

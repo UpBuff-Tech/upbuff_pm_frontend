@@ -1,0 +1,144 @@
+/* Folder Browser Modal Styles */
+
+#folderBrowserModal .modal-dialog {
+  max-width: 600px;
+}
+
+#folderBrowserModal .modal-body {
+  min-height: 300px;
+}
+
+/* Breadcrumb */
+#folderBrowserModal .breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+#folderBrowserModal .breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+#folderBrowserModal .breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+
+#folderBrowserModal .breadcrumb-item.active {
+  color: #6c757d;
+}
+
+/* Folder Browser List */
+.folder-browser-list {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.folder-browser-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-browser-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.folder-browser-list::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.folder-browser-list::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Folder Browser Item */
+.folder-browser-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  padding: 12px;
+}
+
+.folder-browser-item:hover {
+  background: #f8f9fa;
+  transform: translateX(2px);
+}
+
+.folder-browser-item.active {
+  background: #e7f3ff;
+  border-color: #0d6efd;
+}
+
+.folder-browser-item h6 {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  margin: 0;
+}
+
+.folder-browser-item small {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.folder-browser-item .badge {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.folder-browser-item i.fa-folder {
+  font-size: 24px;
+}
+
+.folder-browser-item i.fa-chevron-right {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Empty State */
+.folder-browser-list .text-center {
+  color: #6c757d;
+}
+
+.folder-browser-list .fa-folder-open {
+  opacity: 0.3;
+}
+
+/* Loading State */
+.folder-browser-list .spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Alert Info */
+#folderBrowserModal .alert-info {
+  font-size: 13px;
+}
+
+#folderBrowserModal .alert-info strong {
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+  #folderBrowserModal .modal-dialog {
+    max-width: 95%;
+    margin: 10px auto;
+  }
+
+  .folder-browser-list {
+    max-height: 250px;
+  }
+
+  .folder-browser-item h6 {
+    font-size: 13px;
+  }
+
+  .folder-browser-item i.fa-folder {
+    font-size: 20px;
+  }
+}

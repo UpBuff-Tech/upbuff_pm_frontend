@@ -1,0 +1,94 @@
+/* ---------------------------------------------------------------------------
+   Extras of the ticket detail modals (staff #ticketDetailModal and client
+   #viewTicketModal) on top of the shared detailModal.css look.
+   ------------------------------------------------------------------------- */
+
+/* ---- Comments (chat style) ---- */
+.tdm-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.tdm-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tdm-comment .dm-person-avatar { margin-top: 2px; }
+
+.tdm-comment-bubble {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--fx-border);
+  border-radius: 4px 12px 12px 12px;
+  background: var(--fx-surface-alt);
+}
+
+.tdm-comment.is-client .tdm-comment-bubble {
+  border-color: color-mix(in srgb, var(--fx-primary) 25%, var(--fx-border));
+  background: var(--fx-primary-soft);
+}
+
+.tdm-comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+}
+
+.tdm-comment-head strong { color: var(--fx-text); font-size: 0.8125rem; font-weight: 600; }
+.tdm-comment-head small { color: var(--fx-text-muted); font-size: 0.75rem; white-space: nowrap; }
+
+.tdm-comment-text {
+  margin: 3px 0 0;
+  color: var(--fx-text-body);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.tdm-comment-box {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--fx-border);
+}
+
+/* ---- Attachment rows (dm-file with preview + download buttons) ---- */
+.tdm-file-actions { display: flex; flex-shrink: 0; gap: 4px; }
+
+.tdm-file-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+/* ---- Activity log ---- */
+.tdm-activity { max-height: 260px; overflow-y: auto; padding-top: 2px; }
+.tdm-activity time { display: block; color: var(--fx-text-muted); font-size: 0.75rem; }
+.tdm-activity .tdm-activity-text { color: var(--fx-text-body); font-size: 0.8125rem; line-height: 1.5; overflow-wrap: anywhere; }
+.tdm-activity .tdm-activity-text strong { color: var(--fx-text); font-weight: 600; }
+
+/* ---- Quick actions ---- */
+.tdm-action + .tdm-action { margin-top: 12px; }
+.tdm-action .dm-label { margin-bottom: 6px; }
+.tdm-action .btn { flex-shrink: 0; }
+
+/* ---- Client "close ticket" confirmation ---- */
+.tdm-confirm-note {
+  margin: 0 0 10px;
+  color: var(--fx-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}

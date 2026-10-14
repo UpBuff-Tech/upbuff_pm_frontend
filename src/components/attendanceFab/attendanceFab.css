@@ -1,0 +1,58 @@
+.attendance-fab-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 9999;
+}
+.attendance-fab {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.attendance-fab i {
+  font-size: 28px;
+  color: white;
+}
+.attendance-fab .spinner-border {
+  color: white;
+}
+.attendance-fab:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+.attendance-fab:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+.attendance-fab.not-punched {
+  background-color: #dc3545;
+}
+.attendance-fab.punched-in {
+  background-color: #28a745;
+}
+.attendance-fab.punched-out {
+  background-color: #fd7e14;
+}
+.attendance-fab.loading {
+  background-color: #6c757d;
+}
+@media (max-width: 768px) {
+  .attendance-fab-container {
+    bottom: 20px;
+    right: 20px;
+  }
+  .attendance-fab {
+    width: 50px;
+    height: 50px;
+  }
+  .attendance-fab i {
+    font-size: 24px;
+  }
+}

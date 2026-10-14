@@ -1,0 +1,44 @@
+.client-card a {
+  color: #000 !important;
+  text-decoration: none;
+}
+
+.client-card a:hover {
+  color: #6366F1 !important;
+}
+
+.client-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.client-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.client-card .card-title.view:hover {
+  color: #6366F1 !important;
+}
+
+/* Clamp address to 2 lines max */
+.client-address {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Ensure card-body fills available space for consistent footer alignment */
+.client-card .card-body {
+  flex: 1;
+}
+
+.badge {
+  font-weight: 500;
+}
+
+/* Consistent row gap */
+#clientCardsContainer {
+  row-gap: 0.75rem !important;
+}

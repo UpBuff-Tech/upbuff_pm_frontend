@@ -1,0 +1,272 @@
+/* Folder Tree Component Styles */
+
+.folder-tree {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.folder-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.folder-tree-header h6 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.folder-tree-header .btn {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.folder-tree-root,
+.folder-tree-body {
+  padding: 8px 0;
+}
+
+/* Folder Item Styles */
+.folder-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+
+.folder-item:hover {
+  background: #f8f9fa;
+}
+
+.folder-item.selected {
+  background: #e7f3ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.folder-item.root-item {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Folder Toggle Icon */
+.folder-toggle {
+  width: 20px;
+  text-align: center;
+  margin-right: 5px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.folder-toggle i.invisible {
+  visibility: hidden;
+}
+
+/* Folder Icon */
+.folder-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  color: #6c757d;
+}
+
+.folder-icon .text-success {
+  color: #198754 !important;
+}
+
+.folder-icon .text-warning {
+  color: #ffc107 !important;
+}
+
+/* Folder Name */
+.folder-name {
+  flex: 1;
+  font-size: 14px;
+  color: #212529;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge */
+.folder-item .badge {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+/* Folder Actions */
+.folder-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+.folder-item:hover .folder-actions {
+  opacity: 1;
+}
+
+.folder-menu-btn {
+  padding: 0 4px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.folder-menu-btn:hover {
+  color: #495057;
+}
+
+.dropdown-menu {
+  font-size: 13px;
+  min-width: 160px;
+}
+
+.dropdown-item {
+  padding: 6px 12px;
+}
+
+.dropdown-item i {
+  width: 16px;
+  margin-right: 8px;
+}
+
+/* Nested Folder Indentation */
+.folder-item-wrapper {
+  position: relative;
+}
+
+.folder-children {
+  padding-left: 20px;
+}
+
+/* Level-based indentation */
+.folder-item-wrapper.level-0 .folder-item {
+  padding-left: 12px;
+}
+
+.folder-item-wrapper.level-1 .folder-item {
+  padding-left: 32px;
+}
+
+.folder-item-wrapper.level-2 .folder-item {
+  padding-left: 52px;
+}
+
+.folder-item-wrapper.level-3 .folder-item {
+  padding-left: 72px;
+}
+
+.folder-item-wrapper.level-4 .folder-item {
+  padding-left: 92px;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 32px;
+  margin-bottom: 10px;
+  display: block;
+  opacity: 0.5;
+}
+
+/* Loading Skeleton */
+.folder-skeleton {
+  padding: 8px 12px;
+}
+
+.skeleton-folder-item {
+  padding: 8px 0;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  height: 20px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text {
+  width: 70%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Modal Customizations */
+#folderFormModal .modal-body,
+#deleteFolderModal .modal-body {
+  padding: 20px;
+}
+
+#folderFormModal .form-check,
+#deleteFolderModal .form-check {
+  padding-left: 1.5em;
+}
+
+#folderFormModal .form-check-label i,
+#deleteFolderModal .form-check-label i {
+  margin-right: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .folder-tree-header h6 {
+    font-size: 13px;
+  }
+
+  .folder-item {
+    padding: 6px 10px;
+  }
+
+  .folder-name {
+    font-size: 13px;
+  }
+
+  .folder-children {
+    padding-left: 15px;
+  }
+}
+
+/* Scrollbar Styling */
+.folder-tree-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.folder-tree-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-tree-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.folder-tree-body::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.folder-tree-body::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}

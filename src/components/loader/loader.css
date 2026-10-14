@@ -1,0 +1,202 @@
+/* Global Loader - Full Screen Overlay */
+.global-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.loader-content {
+  position: relative;
+  z-index: 10000;
+  background: #fff;
+  padding: 28px 40px;
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
+  text-align: center;
+}
+
+.loader-spinner .spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.loader-text {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Modal Loader - Overlay inside modal */
+.modal-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-loader-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(3px);
+}
+
+.modal-loader-content {
+  position: relative;
+  z-index: 1061;
+  text-align: center;
+  padding: 20px;
+}
+
+.modal-loader-content .spinner-border {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.modal-loader-content p {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Button Loader - Inline in buttons */
+.button-loader {
+  display: inline-flex;
+  align-items: center;
+}
+
+.button-loader .spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+/* Fade in/out animations */
+.global-loader.show,
+.modal-loader.show {
+  display: flex !important;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.global-loader.hide,
+.modal-loader.hide {
+  animation: fadeOut 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Prevent body scroll when global loader is active */
+body.loader-active {
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   Page loader (PageLoader.jsx): brand mark inside a spinning gradient ring
+   ------------------------------------------------------------------------- */
+.fx-page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 247, 251, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease-in;
+}
+
+.fx-page-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fx-orbit {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.fx-orbit-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(79, 70, 229, 0) 0deg, #6366f1 220deg, #22c55e 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: fx-spin 0.9s linear infinite;
+}
+
+.fx-orbit-mark {
+  position: absolute;
+  inset: 18px;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  animation: fx-breathe 1.8s ease-in-out infinite;
+}
+
+.fx-page-loader-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #64748b;
+}
+
+@keyframes fx-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fx-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.85; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-orbit-ring { animation-duration: 2.4s; }
+  .fx-orbit-mark { animation: none; }
+}

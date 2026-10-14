@@ -1,0 +1,381 @@
+/* Admin dashboard (AdminDashboard.jsx) */
+
+.fx-dash-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.fx-dash-header h4 {
+  font-size: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.fx-dash-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fx-updated {
+  font-size: 0.8125rem;
+  color: var(--fx-text-subtle);
+}
+
+/* ---- KPI tiles ---- */
+.fx-kpi {
+  --tone: var(--fx-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.fx-kpi.tone-green { --tone: var(--fx-success); }
+.fx-kpi.tone-cyan { --tone: var(--fx-info); }
+.fx-kpi.tone-red { --tone: var(--fx-danger); }
+
+.fx-kpi .card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 1.125rem 1.25rem 0;
+  min-height: 168px;
+}
+
+.fx-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.fx-kpi-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 1.1rem;
+}
+
+.fx-kpi-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fx-text-muted);
+}
+
+.fx-kpi-value {
+  margin-top: 0.75rem;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--fx-text);
+}
+
+.fx-kpi-value small {
+  margin-left: 2px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--fx-text-muted);
+}
+
+.fx-kpi-foot {
+  margin-top: 0.375rem;
+  min-height: 20px;
+}
+
+.fx-kpi-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--fx-text-muted);
+}
+
+.fx-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 6px 1px 3px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.fx-delta i { font-size: 0.95rem; }
+.fx-delta.is-good { background: var(--fx-success-soft); color: #15803d; }
+.fx-delta.is-bad { background: var(--fx-danger-soft); color: #b91c1c; }
+.fx-delta.is-flat { background: var(--fx-surface-hover); color: var(--fx-text-muted); padding-left: 6px; }
+
+.fx-kpi-spark {
+  margin: auto -1.25rem 0;
+  padding-top: 0.5rem;
+  min-height: 56px;
+}
+
+.fx-kpi-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.fx-kpi-meter-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fx-surface-hover);
+  overflow: hidden;
+}
+
+.fx-kpi-meter-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone);
+  transition: width 0.6s ease;
+}
+
+/* ---- Summary strip ---- */
+.fx-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.fx-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.fx-summary-item + .fx-summary-item {
+  border-left: 1px solid var(--fx-border);
+}
+
+.fx-summary-item > i {
+  font-size: 1.35rem;
+  color: var(--fx-text-subtle);
+}
+
+.fx-summary-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--fx-text);
+  line-height: 1.2;
+}
+
+.fx-summary-label {
+  font-size: 0.75rem;
+  color: var(--fx-text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 1199.98px) {
+  .fx-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fx-summary-item:nth-child(4) { border-left: 0; }
+  .fx-summary-item:nth-child(n + 4) { border-top: 1px solid var(--fx-border); }
+}
+
+@media (max-width: 575.98px) {
+  .fx-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fx-summary-item:nth-child(odd) { border-left: 0; }
+  .fx-summary-item:nth-child(4) { border-left: 1px solid var(--fx-border); }
+  .fx-summary-item:nth-child(n + 3) { border-top: 1px solid var(--fx-border); }
+}
+
+/* ---- Chart cards ---- */
+.fx-chart-card .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem 0;
+  border-bottom: 0;
+}
+
+.fx-chart-card .card-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.fx-card-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: var(--fx-text-muted);
+}
+
+.fx-chart-card .card-body {
+  padding: 0.75rem 1rem 0.75rem;
+}
+
+.fx-chart-card > .table-responsive {
+  margin-top: 0.75rem;
+}
+
+.fx-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--fx-text-subtle);
+  font-size: 0.8125rem;
+}
+
+.fx-chart-empty i {
+  font-size: 1.75rem;
+}
+
+/* Tooltip used by custom Apex tooltips (heatmap) */
+.fx-apex-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.fx-apex-tip strong { color: var(--fx-text); }
+.fx-apex-tip span { color: var(--fx-text-muted); }
+
+/* ApexCharts chrome */
+.fx-dashboard .apexcharts-tooltip.apexcharts-theme-light {
+  border: 1px solid var(--fx-border);
+  border-radius: 10px;
+  box-shadow: var(--fx-shadow-md);
+}
+
+.fx-dashboard .apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-title {
+  background: var(--fx-surface-alt);
+  border-bottom: 1px solid var(--fx-border);
+  font-weight: 600;
+}
+
+.fx-dashboard .apexcharts-legend-text strong {
+  margin-left: 4px;
+}
+
+/* ---- Loading skeletons: .fx-skeleton lives in components/skeleton/skeleton.css ---- */
+
+/* ---- Team assignments table ---- */
+.fx-assign-table td {
+  vertical-align: middle;
+}
+
+.fx-assign-project {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 200px;
+}
+
+.fx-assign-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--fx-primary-soft);
+  color: var(--fx-primary);
+  font-weight: 700;
+}
+
+.fx-assign-name {
+  font-weight: 600;
+  color: var(--fx-text);
+}
+
+.fx-assign-client {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--fx-text-muted);
+}
+
+.fx-member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fx-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid var(--fx-border);
+  border-radius: 999px;
+  background: var(--fx-surface);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--fx-text);
+  white-space: nowrap;
+}
+
+.fx-member-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--fx-surface-hover);
+  color: var(--fx-text-body);
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.fx-member-time {
+  color: var(--fx-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-assign-hours {
+  font-weight: 700;
+  color: var(--fx-text);
+}
+
+.fx-assign-sub {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--fx-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.fx-progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fx-surface-hover);
+  overflow: hidden;
+}
+
+.fx-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fx-success);
+}
+
+.fx-progress-value {
+  min-width: 36px;
+  text-align: right;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fx-text);
+  font-variant-numeric: tabular-nums;
+}
