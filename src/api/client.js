@@ -11,6 +11,10 @@
 import { stringify, parse } from './ejson';
 import { UNBLOCKED_METHODS } from './unblockedMethods';
 
+// Address of the backend. Empty in development (the Vite dev server proxies /rpc, /auth, ...);
+// the production build sets it in .env.production.
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 const TOKEN_KEY = 'Meteor.loginToken';
 const USER_ID_KEY = 'Meteor.userId';
 
@@ -83,7 +87,7 @@ export async function request(method, url, body) {
 
   let response;
   try {
-    response = await fetch(url, { method, headers, body: body === undefined ? undefined : stringify(body) });
+    response = await fetch(API_URL + url, { method, headers, body: body === undefined ? undefined : stringify(body) });
   } catch (networkError) {
     setConnected(false);
     const error = new Error('Network error');

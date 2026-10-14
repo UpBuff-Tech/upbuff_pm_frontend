@@ -1,13 +1,15 @@
 /**
  * Project Task Employee Analysis: employee task activity and time tracking for a date range.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import moment from 'moment';
 import api from '../../api/client';
 import TableExportButtons from '../../components/exportButtons/TableExportButtons';
+import { colorFor, initialsOf } from '../../components/detailModal/DetailModal';
 import { toFileNameSlug, formatDateRangeLabel } from '../../lib/tableExport';
-import { ReportLoading, ReportEmptyState } from './ReportStates';
-import { getStatusBadge, hasReportTasks, getReportRangeLabel, formatDate } from './utility';
+import { ReportLoading } from './ReportStates';
+import { hasReportTasks, getReportRangeLabel, formatDate } from './utility';
+import './employeeTaskReport.css';
 
 // Mirrors the on-screen report table, totals row included.
 const EXPORT_COLUMNS = [
@@ -21,8 +23,33 @@ const EXPORT_COLUMNS = [
   { header: 'Task Status', value: r => r.status }
 ];
 
-const TOTAL_FONT = { fontSize: '1.1rem' };
-const BIG_FONT = { fontSize: '1.25rem' };
+const STATUSES = [
+  { key: 'Pending', cls: 'pending' },
+  { key: 'In Progress', cls: 'inprogress' },
+  { key: 'Testing', cls: 'testing' },
+  { key: 'On Hold', cls: 'onhold' },
+  { key: 'Completed', cls: 'completed' },
+];
+const statusClass = (status) => (STATUSES.find((s) => s.key === status) || STATUSES[0]).cls;
+
+// Quick ranges: each returns [from, to] as YYYY-MM-DD
+const PRESETS = [
+  { key: 'today', label: 'Today', range: () => [moment(), moment()] },
+  { key: 'yesterday', label: 'Yesterday', range: () => [moment().subtract(1, 'day'), moment().subtract(1, 'day')] },
+  { key: 'week', label: 'This week', range: () => [moment().startOf('isoWeek'), moment()] },
+  { key: '7d', label: 'Last 7 days', range: () => [moment().subtract(6, 'days'), moment()] },
+  { key: 'month', label: 'This month', range: () => [moment().startOf('month'), moment()] },
+  { key: '30d', label: 'Last 30 days', range: () => [moment().subtract(29, 'days'), moment()] },
+];
+
+const SORTS = {
+  employee: (a, b) => (a.employeeName || '').localeCompare(b.employeeName || ''),
+  project: (a, b) => (a.projectName || '').localeCompare(b.projectName || ''),
+  task: (a, b) => (a.taskName || '').localeCompare(b.taskName || ''),
+  range: (a, b) => (a.dailyTimeSpentSeconds || 0) - (b.dailyTimeSpentSeconds || 0),
+  total: (a, b) => (a.timeSpentSeconds || 0) - (b.timeSpentSeconds || 0),
+  status: (a, b) => (a.status || '').localeCompare(b.status || ''),
+};
 
 /**
  * The date(s) a task's in-range time was actually logged on. Shared by the
@@ -30,6 +57,17 @@ const BIG_FONT = { fontSize: '1.25rem' };
  */
 function taskWorkDateLabel(task) {
   return formatDateRangeLabel(task.workDateFrom, task.workDateTo);
+}
+
+/** 5400 -> "1h 30m" (short form for tiles and bars) */
+function formatHours(seconds) {
+  const total = Math.max(0, Math.round(seconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours && minutes) return `${hours}h ${minutes}m`;
+  if (hours) return `${hours}h`;
+  if (minutes) return `${minutes}m`;
+  return total ? `${total}s` : '0m';
 }
 
 /**
@@ -90,6 +128,87 @@ const EXPORT_CONFIG = {
   emptyMessage: 'No data to export'
 };
 
+/** Sum the in-range seconds per key, largest first */
+function groupTime(tasks, keyOf) {
+  const groups = new Map();
+  tasks.forEach((task) => {
+    const key = keyOf(task) || 'Unknown';
+    const group = groups.get(key) || { name: key, seconds: 0, tasks: 0 };
+    group.seconds += task.dailyTimeSpentSeconds || 0;
+    group.tasks += 1;
+    groups.set(key, group);
+  });
+  return [...groups.values()].sort((a, b) => b.seconds - a.seconds);
+}
+
+/* ---------------------------------------------------------------------------
+   Presentational pieces
+   ------------------------------------------------------------------------- */
+
+function Avatar({ name, size = '' }) {
+  return (
+    <span className={`etr-avatar ${size}`} style={{ '--c': colorFor(name || '?') }} title={name}>
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+function KpiTile({ tone, icon, label, value, caption }) {
+  return (
+    <div className={`etr-kpi tone-${tone}`}>
+      <div className="etr-kpi-head">
+        <span className="etr-kpi-icon"><i className={`bx ${icon}`}></i></span>
+        <span className="etr-kpi-label">{label}</span>
+      </div>
+      <strong className="etr-kpi-value">{value}</strong>
+      {caption && <span className="etr-kpi-caption">{caption}</span>}
+    </div>
+  );
+}
+
+/** Ranked horizontal bars: one hue, value labelled at the end of each bar */
+function RankedBars({ rows, withAvatar, emptyText, limit = 8 }) {
+  const shown = rows.slice(0, limit);
+  const max = Math.max(1, ...shown.map((row) => row.seconds));
+  const rest = rows.slice(limit);
+
+  if (!shown.length) return <p className="etr-muted-note">{emptyText}</p>;
+
+  return (
+    <ul className="etr-bars">
+      {shown.map((row) => (
+        <li key={row.name} title={`${row.name}: ${formatHours(row.seconds)} across ${row.tasks} task${row.tasks === 1 ? '' : 's'}`}>
+          <div className="etr-bars-label">
+            {withAvatar && <Avatar name={row.name} size="is-sm" />}
+            <span>{row.name}</span>
+          </div>
+          <div className="etr-bars-track">
+            <span style={{ width: `${Math.max(2, row.seconds / max * 100)}%` }}></span>
+          </div>
+          <b>{formatHours(row.seconds)}</b>
+        </li>
+      ))}
+      {rest.length > 0 && (
+        <li className="etr-bars-more">
+          + {rest.length} more · {formatHours(rest.reduce((sum, row) => sum + row.seconds, 0))}
+        </li>
+      )}
+    </ul>
+  );
+}
+
+function SortHeader({ label, sortKey, sort, onSort, className = '' }) {
+  const active = sort.key === sortKey;
+  return (
+    <th className={className}>
+      <button type="button" className={'etr-sort' + (active ? ' is-active' : '')} onClick={() => onSort(sortKey)}>
+        {label}
+        <i className={`bx ${active ? (sort.dir === 'asc' ? 'bx-chevron-up' : 'bx-chevron-down') : 'bx-sort-alt-2'}`}></i>
+      </button>
+    </th>
+  );
+}
+
 export default function EmployeeTaskReport() {
   const [isLoading, setIsLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
@@ -102,6 +221,12 @@ export default function EmployeeTaskReport() {
   const [maxDate] = useState(() => moment().format('YYYY-MM-DD'));
   const [fromDateValue, setFromDateValue] = useState(maxDate);
   const [toDateValue, setToDateValue] = useState('');
+  const [activePreset, setActivePreset] = useState('today');
+
+  // Table tools (on the generated report only, nothing is fetched again)
+  const [search, setSearch] = useState('');
+  const [statusView, setStatusView] = useState('All');
+  const [sort, setSort] = useState({ key: null, dir: 'desc' });
 
   const hasReportData = hasReportTasks(reportData);
 
@@ -151,7 +276,7 @@ export default function EmployeeTaskReport() {
   useEffect(() => {
     $('#employeeSelect').select2({ placeholder: 'Select Employee', allowClear: true, width: '100%' });
     $('#projectSelect').select2({ placeholder: 'Select Project', allowClear: true, width: '100%' });
-    $('#statusFilter').select2({ placeholder: 'All Statuses', allowClear: true, width: '100%' });
+    $('#statusFilter').select2({ placeholder: 'All Statuses', allowClear: true, width: '100%', minimumResultsForSearch: Infinity });
 
     return () => {
       $('#employeeSelect, #projectSelect, #statusFilter').select2('destroy');
@@ -179,21 +304,19 @@ export default function EmployeeTaskReport() {
     }
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
+  /** Fetch the report for the filters on screen and the given dates (YYYY-MM-DD) */
+  const generateReport = (fromDateStr, toDateInput) => {
     const employeeId = $('#employeeSelect').val();
     const projectId = $('#projectSelect').val();
     const statusFilter = $('#statusFilter').val() || 'All';
 
-    const fromDateStr = fromDateValue;
     if (!fromDateStr) {
       toastr.error('From date is required');
       return;
     }
 
     // Default to same as fromDate if To date is not selected
-    const toDateStr = toDateValue || fromDateStr;
+    const toDateStr = toDateInput || fromDateStr;
 
     if (moment(fromDateStr).isAfter(moment(toDateStr))) {
       toastr.error('From date cannot be after To date');
@@ -206,6 +329,8 @@ export default function EmployeeTaskReport() {
     setIsLoading(true);
     setShowEmptyState(false);
     setReportData(null);
+    setSearch('');
+    setStatusView('All');
 
     const statusText = statusFilter !== 'All' ? ` with status "${statusFilter}"` : '';
 
@@ -230,15 +355,29 @@ export default function EmployeeTaskReport() {
     }
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    generateReport(fromDateValue, toDateValue);
+  };
+
+  const handlePreset = (preset) => {
+    const [from, to] = preset.range().map((date) => date.format('YYYY-MM-DD'));
+    setFromDateValue(from);
+    setToDateValue(to === from ? '' : to);
+    setActivePreset(preset.key);
+    generateReport(from, to);
+  };
+
   const handleResetFilters = (event) => {
     event.preventDefault();
 
     const today = moment().format('YYYY-MM-DD');
     $('#employeeSelect').val('').trigger('change');
     $('#projectSelect').val('').trigger('change');
-    $('#statusFilter').val('All');
+    $('#statusFilter').val('All').trigger('change');
     setFromDateValue(today);
     setToDateValue('');
+    setActivePreset('today');
 
     setReportData(null);
     setShowEmptyState(false);
@@ -247,88 +386,141 @@ export default function EmployeeTaskReport() {
     toastr.info('Filters reset');
   };
 
+  const handleSort = (key) => {
+    setSort((current) => (current.key === key
+      ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: key === 'range' || key === 'total' ? 'desc' : 'asc' }));
+  };
+
+  /* ---- Figures derived from the report ---- */
+  const tasks = hasReportData ? reportData.tasks : [];
+  const withEmployee = (task) => task.employeeName || (reportData && reportData.employeeName) || 'Unassigned';
+
+  const insights = useMemo(() => {
+    const rangeSeconds = tasks.reduce((sum, task) => sum + (task.dailyTimeSpentSeconds || 0), 0);
+    const byEmployee = groupTime(tasks, withEmployee);
+    const byProject = groupTime(tasks, (task) => task.projectName);
+    const statusCounts = Object.fromEntries(STATUSES.map((s) => [s.key, tasks.filter((t) => t.status === s.key).length]));
+    const days = reportData ? Math.max(1, moment(reportData.toDate).startOf('day').diff(moment(reportData.fromDate).startOf('day'), 'days') + 1) : 1;
+    const top = byEmployee[0];
+    return {
+      rangeSeconds,
+      byEmployee,
+      byProject,
+      statusCounts,
+      days,
+      employees: byEmployee.length,
+      avgPerEmployee: byEmployee.length ? rangeSeconds / byEmployee.length : 0,
+      topEmployee: top && top.seconds > 0 ? top : null,
+    };
+  }, [reportData]);
+
+  const maxRowSeconds = Math.max(1, ...tasks.map((task) => task.dailyTimeSpentSeconds || 0));
+
+  const visibleTasks = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    let list = tasks
+      .map((task, index) => ({ ...task, $index: index }))
+      .filter((task) => (statusView === 'All' || task.status === statusView)
+        && (!term || [withEmployee(task), task.projectName, task.taskName, task.taskDisplayId]
+          .some((value) => (value || '').toLowerCase().includes(term))));
+    if (sort.key) {
+      const compare = SORTS[sort.key];
+      list = [...list].sort((a, b) => (sort.dir === 'asc' ? compare(a, b) : compare(b, a)));
+    }
+    return list;
+  }, [reportData, search, statusView, sort]);
+
+  const visibleRangeSeconds = visibleTasks.reduce((sum, task) => sum + (task.dailyTimeSpentSeconds || 0), 0);
+  const visibleTotalSeconds = visibleTasks.reduce((sum, task) => sum + (task.timeSpentSeconds || 0), 0);
+  const isFiltered = visibleTasks.length !== tasks.length;
+
   return (
-    <div className="container-xxl flex-grow-1 container-p-y">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container-xxl flex-grow-1 container-p-y etr-page">
+      {/* Page header */}
+      <div className="etr-header">
         <div>
-          <h4 className="fw-bold mb-1">Project Task Employee Analysis</h4>
-          <p className="text-muted mb-0">Daily report showing employee task activity and time tracking</p>
+          <span className="etr-eyebrow"><i className="bx bx-time-five"></i> Time tracking</span>
+          <h4 className="etr-title">Employee Task Report</h4>
+          <p className="etr-subtitle">See who worked on what, and how long, for any date range.</p>
         </div>
-        <div className="d-flex gap-2">
-          {hasReportData && (
-            /* No date pickers here — the report is already generated for a chosen range */
-            <TableExportButtons scope="employeeTaskReport" config={EXPORT_CONFIG} instance={{ reportData }} />
-          )}
-        </div>
+        {hasReportData && (
+          /* No date pickers here — the report is already generated for a chosen range */
+          <TableExportButtons scope="employeeTaskReport" config={EXPORT_CONFIG} instance={{ reportData }} />
+        )}
       </div>
 
-      {/* Filter Card */}
-      <div className="card mb-4">
-        <div className="card-body">
-          <form id="reportFilterForm" onSubmit={handleSubmit}>
-            <div className="row g-3 align-items-end">
-              {/* Employee: col-md-2 */}
-              <div className="col-md-2">
-                <label htmlFor="employeeSelect" className="form-label">Employee</label>
-                <select className="form-select select2" id="employeeSelect" name="employeeSelect" defaultValue="">
-                  <option value="">All Employees</option>
-                  {employeeList.map((employee) => (
-                    <option key={employee._id} value={employee._id}>{employee.profile && employee.profile.firstName} {employee.profile && employee.profile.lastName}</option>
-                  ))}
-                </select>
-              </div>
+      {/* Filters */}
+      <div className="card etr-filters">
+        <form id="reportFilterForm" onSubmit={handleSubmit}>
+          <div className="etr-presets">
+            <span className="etr-presets-label"><i className="bx bx-calendar-event"></i> Quick range</span>
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                type="button"
+                className={'etr-preset' + (activePreset === preset.key ? ' is-active' : '')}
+                onClick={() => handlePreset(preset)}
+                disabled={isLoading}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
 
-              {/* Project: col-md-2 */}
-              <div className="col-md-2">
-                <label htmlFor="projectSelect" className="form-label">Project</label>
-                <select className="form-select select2" id="projectSelect" name="projectSelect" defaultValue="">
-                  <option value="">All Projects</option>
-                  {projectList.map((project) => (
-                    <option key={project._id} value={project._id}>{project.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="etr-filter-grid">
+            <div className="etr-field">
+              <label htmlFor="employeeSelect"><i className="bx bx-user"></i> Employee</label>
+              <select className="form-select select2" id="employeeSelect" name="employeeSelect" defaultValue="">
+                <option value="">All Employees</option>
+                {employeeList.map((employee) => (
+                  <option key={employee._id} value={employee._id}>{employee.profile && employee.profile.firstName} {employee.profile && employee.profile.lastName}</option>
+                ))}
+              </select>
+            </div>
 
-              {/* Status: col-md-2 */}
-              <div className="col-md-2">
-                <label htmlFor="statusFilter" className="form-label">Task Status</label>
-                <select className="form-select" id="statusFilter" name="statusFilter" style={{ width: '100%' }} defaultValue="All">
-                  <option value="All">All Statuses</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Testing">Testing</option>
-                  <option value="On Hold">On Hold</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
+            <div className="etr-field">
+              <label htmlFor="projectSelect"><i className="bx bx-briefcase-alt-2"></i> Project</label>
+              <select className="form-select select2" id="projectSelect" name="projectSelect" defaultValue="">
+                <option value="">All Projects</option>
+                {projectList.map((project) => (
+                  <option key={project._id} value={project._id}>{project.name}</option>
+                ))}
+              </select>
+            </div>
 
-              {/* From date (always visible, mandatory) */}
-              <div className="col-md-2">
-                <label htmlFor="fromDate" className="form-label">From <span className="text-danger">*</span></label>
+            <div className="etr-field">
+              <label htmlFor="statusFilter"><i className="bx bx-flag"></i> Task status</label>
+              <select className="form-select" id="statusFilter" name="statusFilter" style={{ width: '100%' }} defaultValue="All">
+                <option value="All">All Statuses</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Testing">Testing</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div className="etr-field etr-field-dates">
+              <label htmlFor="fromDate"><i className="bx bx-calendar"></i> Date range <span className="text-danger">*</span></label>
+              <div className="etr-daterange">
                 <input type="date" className="form-control" id="fromDate" name="fromDate" required max={maxDate}
-                  value={fromDateValue} onChange={(event) => setFromDateValue(event.target.value)} />
-              </div>
-
-              {/* To date (always visible, optional — defaults to today) */}
-              <div className="col-md-2">
-                <label htmlFor="toDate" className="form-label">To</label>
+                  value={fromDateValue} onChange={(event) => { setFromDateValue(event.target.value); setActivePreset(null); }} />
+                <i className="bx bx-right-arrow-alt"></i>
                 <input type="date" className="form-control" id="toDate" name="toDate" placeholder="Today" max={maxDate}
-                  value={toDateValue} onChange={(event) => setToDateValue(event.target.value)} />
-              </div>
-
-              {/* Buttons: always col-md-2 */}
-              <div className="col-md-2">
-                <div className="d-flex gap-2">
-                  <button type="submit" className="btn btn-primary flex-fill">
-                    <i className="bx bx-search me-1"></i> Generate
-                  </button>
-                  <button type="button" className="btn btn-outline-secondary" id="resetFilters" onClick={handleResetFilters}>
-                    <i className="bx bx-reset"></i>
-                  </button>
-                </div>
+                  value={toDateValue} onChange={(event) => { setToDateValue(event.target.value); setActivePreset(null); }} />
               </div>
             </div>
-          </form>
-        </div>
+
+            <div className="etr-field etr-field-actions">
+              <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                <i className={`bx ${isLoading ? 'bx-loader-alt bx-spin' : 'bx-bar-chart-alt-2'} me-1`}></i> Generate
+              </button>
+              <button type="button" className="btn btn-outline-secondary etr-icon-btn" id="resetFilters" title="Reset filters" onClick={handleResetFilters}>
+                <i className="bx bx-reset"></i>
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
 
       {/* Report Content */}
@@ -336,92 +528,195 @@ export default function EmployeeTaskReport() {
 
       {!isLoading && hasReportData && (
         <>
-          {/* Report Header */}
-          <div className="card mb-3">
-            <div className="card-body">
-              <div className="row">
-                {reportData.employeeName ? (
-                  <div className="col-md-3">
-                    <h6 className="text-muted mb-1">Employee Name</h6>
-                    <p className="mb-0 fw-bold">{reportData.employeeName}</p>
-                  </div>
-                ) : (
-                  <div className="col-md-3">
-                    <h6 className="text-muted mb-1">Report Type</h6>
-                    <p className="mb-0 fw-bold">All Employees ({reportData.employeeCount} total)</p>
-                  </div>
-                )}
-                {reportData.projectName && (
-                  <div className="col-md-3">
-                    <h6 className="text-muted mb-1">Project</h6>
-                    <p className="mb-0 fw-bold">{reportData.projectName}</p>
-                  </div>
-                )}
-                <div className="col-md-3">
-                  <h6 className="text-muted mb-1">Date Range</h6>
-                  <p className="mb-0 fw-bold">{formatDate(reportData.fromDate)} — {formatDate(reportData.toDate)}</p>
+          {/* Report context */}
+          <div className="etr-context">
+            <span className="etr-context-chip">
+              {reportData.employeeName ? <Avatar name={reportData.employeeName} size="is-xs" /> : <i className="bx bx-group"></i>}
+              {reportData.employeeName || `All employees · ${reportData.employeeCount} total`}
+            </span>
+            {reportData.projectName && (
+              <span className="etr-context-chip"><i className="bx bx-briefcase-alt-2"></i>{reportData.projectName}</span>
+            )}
+            <span className="etr-context-chip">
+              <i className="bx bx-calendar"></i>{formatDate(reportData.fromDate)} — {formatDate(reportData.toDate)}
+              <em>{insights.days} day{insights.days === 1 ? '' : 's'}</em>
+            </span>
+          </div>
+
+          {/* KPI tiles */}
+          <div className="etr-kpis">
+            <KpiTile tone="green" icon="bx-stopwatch" label="Time in range" value={reportData.totalDailyTimeSpent}
+              caption={insights.days > 1 ? `≈ ${formatHours(insights.rangeSeconds / insights.days)} per day` : 'Logged in the selected range'} />
+            <KpiTile tone="indigo" icon="bx-time" label="Total time spent" value={reportData.totalTimeSpent} caption="Lifetime on these tasks" />
+            <KpiTile tone="cyan" icon="bx-task" label="Tasks worked" value={tasks.length}
+              caption={`${insights.statusCounts.Completed} completed`} />
+            <KpiTile tone="violet" icon="bx-group" label="Employees" value={insights.employees}
+              caption={`≈ ${formatHours(insights.avgPerEmployee)} each`} />
+            <KpiTile tone="amber" icon="bx-trophy" label="Most time logged"
+              value={insights.topEmployee ? formatHours(insights.topEmployee.seconds) : '—'}
+              caption={insights.topEmployee ? insights.topEmployee.name : 'No time logged yet'} />
+          </div>
+
+          {/* Insights */}
+          <div className="row g-3 mb-3">
+            <div className="col-lg-5">
+              <div className="card h-100 etr-panel">
+                <div className="etr-panel-head">
+                  <h6><i className="bx bx-user-check"></i> Time by employee</h6>
+                  <span>In range</span>
                 </div>
-                <div className="col-md-3">
-                  <h6 className="text-muted mb-1">Time in Range</h6>
-                  <p className="mb-0 fw-bold text-success" style={BIG_FONT}>{reportData.totalDailyTimeSpent}</p>
+                <RankedBars rows={insights.byEmployee} withAvatar emptyText="No time logged in this range." />
+              </div>
+            </div>
+            <div className="col-lg-4">
+              <div className="card h-100 etr-panel">
+                <div className="etr-panel-head">
+                  <h6><i className="bx bx-briefcase-alt-2"></i> Time by project</h6>
+                  <span>In range</span>
                 </div>
-                <div className="col-md-3">
-                  <h6 className="text-muted mb-1">Total Time Spent</h6>
-                  <p className="mb-0 fw-bold text-primary" style={BIG_FONT}>{reportData.totalTimeSpent}</p>
+                <RankedBars rows={insights.byProject} limit={6} emptyText="No time logged in this range." />
+              </div>
+            </div>
+            <div className="col-lg-3">
+              <div className="card h-100 etr-panel">
+                <div className="etr-panel-head">
+                  <h6><i className="bx bx-pie-chart-alt-2"></i> Task status</h6>
+                  <span>{tasks.length} tasks</span>
+                </div>
+                <div className="etr-status">
+                  <div className="etr-status-stack">
+                    {STATUSES.filter((s) => insights.statusCounts[s.key]).map((s) => (
+                      <span key={s.key} className={`s-${s.cls}`}
+                        style={{ width: `${insights.statusCounts[s.key] / tasks.length * 100}%` }}
+                        title={`${s.key}: ${insights.statusCounts[s.key]}`}></span>
+                    ))}
+                  </div>
+                  <ul className="etr-status-list">
+                    {STATUSES.map((s) => (
+                      <li key={s.key} className={insights.statusCounts[s.key] ? '' : 'is-zero'}>
+                        <i className={`s-${s.cls}`}></i>
+                        <span>{s.key}</span>
+                        <b>{insights.statusCounts[s.key]}</b>
+                        <em>{Math.round(insights.statusCounts[s.key] / tasks.length * 100)}%</em>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Report Table */}
-          <div className="card">
-            <div className="card-body">
-              <div className="table-responsive">
-                <table className="table table-hover table-bordered" id="reportTable">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: '5%' }}>Sl No</th>
-                      <th style={{ width: '10%' }}>Date</th>
-                      <th style={{ width: '16%' }}>Employee Name</th>
-                      <th style={{ width: '13%' }}>Project</th>
-                      <th style={{ width: '20%' }}>Task Name</th>
-                      <th style={{ width: '11%' }}>Time in Range</th>
-                      <th style={{ width: '11%' }}>Total Time</th>
-                      <th style={{ width: '14%' }}>Task Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.tasks.map((task, index) => (
-                      <tr key={index}>
-                        <td className="text-center">{index + 1}</td>
-                        <td className="text-nowrap">{taskWorkDateLabel(task)}</td>
-                        <td>{task.employeeName}</td>
-                        <td>{task.projectName}</td>
-                        <td>{task.taskName}</td>
-                        <td className="fw-semibold text-success">{task.dailyTimeSpent}</td>
-                        <td className="fw-semibold">{task.timeSpent}</td>
-                        <td>
-                          <span className={`badge ${getStatusBadge(task.status)}`}>{task.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                    {/* Total Row */}
-                    <tr className="table-primary fw-bold">
-                      <td colSpan="5" className="text-end">Total:</td>
-                      <td className="text-start text-success" style={TOTAL_FONT}>{reportData.totalDailyTimeSpent}</td>
-                      <td className="text-start" style={TOTAL_FONT}>{reportData.totalTimeSpent}</td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
+          {/* Report table */}
+          <div className="card etr-table-card">
+            <div className="etr-table-toolbar">
+              <div className="etr-search">
+                <i className="bx bx-search"></i>
+                <input type="search" placeholder="Search employee, project or task…" value={search}
+                  onChange={(event) => setSearch(event.target.value)} />
               </div>
+              <div className="etr-tabs" role="tablist">
+                {['All', ...STATUSES.map((s) => s.key)].filter((key) => key === 'All' || insights.statusCounts[key]).map((key) => (
+                  <button key={key} type="button" role="tab" aria-selected={statusView === key}
+                    className={statusView === key ? 'is-active' : ''} onClick={() => setStatusView(key)}>
+                    {key}<b>{key === 'All' ? tasks.length : insights.statusCounts[key]}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="table-responsive etr-table-wrap">
+              <table className="table etr-table" id="reportTable">
+                <thead>
+                  <tr>
+                    <th className="etr-col-no">#</th>
+                    <th>Date</th>
+                    <SortHeader label="Employee" sortKey="employee" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Project" sortKey="project" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Task" sortKey="task" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Time in range" sortKey="range" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Total time" sortKey="total" sort={sort} onSort={handleSort} />
+                    <SortHeader label="Status" sortKey="status" sort={sort} onSort={handleSort} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleTasks.map((task, index) => (
+                    <tr key={task.$index}>
+                      <td className="etr-col-no">{index + 1}</td>
+                      <td className="text-nowrap etr-date">{taskWorkDateLabel(task)}</td>
+                      <td>
+                        <div className="etr-person">
+                          <Avatar name={withEmployee(task)} />
+                          <span>{withEmployee(task)}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="etr-project">
+                          <i style={{ background: colorFor(task.projectName || '?') }}></i>{task.projectName}
+                        </span>
+                      </td>
+                      <td className="etr-task">
+                        <span>{task.taskName}</span>
+                        {task.taskDisplayId && task.taskDisplayId !== '-' && <small>{task.taskDisplayId}</small>}
+                      </td>
+                      <td>
+                        <div className="etr-time">
+                          <b>{task.dailyTimeSpent}</b>
+                          <span className="etr-time-bar">
+                            <span style={{ width: `${(task.dailyTimeSpentSeconds || 0) / maxRowSeconds * 100}%` }}></span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="etr-total">{task.timeSpent}</td>
+                      <td><span className={`etr-pill s-${statusClass(task.status)}`}>{task.status}</span></td>
+                    </tr>
+                  ))}
+                  {!visibleTasks.length && (
+                    <tr>
+                      <td colSpan="8" className="etr-no-match">
+                        <i className="bx bx-filter-alt"></i> No tasks match your search.
+                        <button type="button" onClick={() => { setSearch(''); setStatusView('All'); }}>Clear</button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="5" className="text-end">
+                      {isFiltered ? `Total (${visibleTasks.length} of ${tasks.length} tasks shown)` : 'Total'}
+                    </td>
+                    <td className="etr-foot-range">{isFiltered ? formatHours(visibleRangeSeconds) : reportData.totalDailyTimeSpent}</td>
+                    <td className="etr-foot-total">{isFiltered ? formatHours(visibleTotalSeconds) : reportData.totalTimeSpent}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </>
       )}
 
-      {!isLoading && !hasReportData && showEmptyState && <ReportEmptyState message={emptyMessage} />}
+      {!isLoading && !hasReportData && showEmptyState && (
+        <div className="card etr-empty">
+          <div className="etr-empty-art"><i className="bx bx-calendar-x"></i></div>
+          <h5>No activity found</h5>
+          <p>{emptyMessage || 'Please select filters and generate the report.'}</p>
+          <div className="etr-empty-actions">
+            {PRESETS.filter((preset) => ['7d', 'month'].includes(preset.key)).map((preset) => (
+              <button key={preset.key} type="button" className="etr-preset" onClick={() => handlePreset(preset)}>
+                Try {preset.label.toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
+      {!isLoading && !hasReportData && !showEmptyState && (
+        <div className="card etr-empty">
+          <div className="etr-empty-art"><i className="bx bx-bar-chart-alt-2"></i></div>
+          <h5>Generate a report</h5>
+          <p>Pick a quick range above, or set the filters and press Generate.</p>
+        </div>
+      )}
     </div>
   );
 }
