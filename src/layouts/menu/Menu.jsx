@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import NotificationBadge from '../../components/notifications/NotificationBadge';
 import { closeMobileSidebar, isSidebarCollapsed } from '../sidebarState';
@@ -82,6 +82,17 @@ function buildSections(isClientUser, userCan) {
   ];
 }
 
+const FOLDED_KEY = 'fx-menu-folded';
+
+/** Titles of the sections the user has folded away (remembered across visits). */
+function readFolded() {
+  try {
+    return JSON.parse(localStorage.getItem(FOLDED_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
 /** href of the item to highlight: the longest menu path the current URL starts with. */
 function findActiveHref(items, currentPath) {
   let best = null;
@@ -95,7 +106,10 @@ function findActiveHref(items, currentPath) {
 export default function Menu() {
   const { user, userCan } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname + location.search;
+  const [query, setQuery] = useState('');
+  const [folded, setFolded] = useState(readFolded);
 
   const isClientUser = !!(user && user.profile && user.profile.role === 'client');
 
@@ -103,6 +117,38 @@ export default function Menu() {
     .map((section) => ({ ...section, items: section.items.filter((menuItem) => menuItem.show !== false) }))
     .filter((section) => section.items.length > 0);
   const activeHref = findActiveHref(sections.flatMap((section) => section.items), currentPath);
+
+  const needle = query.trim().toLowerCase();
+  const visibleSections = needle
+    ? sections
+      .map((section) => ({ ...section, items: section.items.filter((menuItem) => menuItem.label.toLowerCase().includes(needle)) }))
+      .filter((section) => section.items.length > 0)
+    : sections;
+
+  const toggleSection = (title) => {
+    setFolded((current) => {
+      const next = current.includes(title) ? current.filter((t) => t !== title) : [...current, title];
+      try {
+        localStorage.setItem(FOLDED_KEY, JSON.stringify(next));
+      } catch (e) {
+        // Private mode: the choice just isn't remembered.
+      }
+      return next;
+    });
+  };
+
+  const onSearchKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      setQuery('');
+      event.currentTarget.blur();
+    } else if (event.key === 'Enter' && visibleSections.length) {
+      // Enter opens the first match
+      navigate(visibleSections[0].items[0].to);
+      setQuery('');
+      event.currentTarget.blur();
+      scrollToTop();
+    }
+  };
 
   // Close the slide-in menu (small screens) whenever the page changes
   useEffect(() => {
@@ -140,7 +186,9 @@ export default function Menu() {
       <aside id="fx-sidebar" className="fx-sidebar" aria-label="Main navigation">
         <div className="fx-sidebar-brand">
           <Link to="/" className="fx-sidebar-logo" onClick={scrollToTop}>
-            <img src="/img/logo.png" alt="" />
+            <span className="fx-sidebar-logo-mark">
+              <img src="/img/logo.png" alt="" />
+            </span>
             <span className="fx-sidebar-wordmark">
               Fiëro
               <small>by Upbuff</small>
@@ -148,27 +196,49 @@ export default function Menu() {
           </Link>
         </div>
 
-        <nav className="fx-sidebar-nav">
-          {sections.map((section) => (
-            <div className="fx-nav-section" key={section.title}>
-              <div className="fx-nav-heading">{section.title}</div>
-              <ul className="fx-nav-list">
-                {section.items.map((menuItem) => (
-                  <li key={menuItem.to}>
-                    <Link to={menuItem.to} onClick={scrollToTop} data-tooltip={menuItem.label}
-                      className={'fx-nav-link' + (activeHref === menuItem.to ? ' active' : '')}
-                      aria-current={activeHref === menuItem.to ? 'page' : undefined}>
-                      <i className={'bx ' + menuItem.icon}></i>
-                      <span className="fx-nav-label">{menuItem.label}</span>
-                      {menuItem.badge && <NotificationBadge />}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
+        <div className="fx-sidebar-search">
+          <i className="bx bx-search"></i>
+          <input type="text" value={query} placeholder="Search menu…"
+            onChange={(event) => setQuery(event.target.value)} onKeyDown={onSearchKeyDown}
+            aria-label="Search menu" />
+          {query && (
+            <button type="button" className="fx-search-clear" onClick={() => setQuery('')} aria-label="Clear search"><i className="bx bx-x"></i></button>
+          )}
+        </div>
 
+        <nav className="fx-sidebar-nav">
+          {visibleSections.map((section) => {
+            const isFolded = !needle && folded.includes(section.title);
+            return (
+              <div className={'fx-nav-section' + (isFolded ? ' folded' : '')} key={section.title}>
+                <button type="button" className="fx-nav-heading" onClick={() => toggleSection(section.title)}
+                  aria-expanded={!isFolded}>
+                  <span>{section.title}</span>
+                  <i className="bx bx-chevron-down"></i>
+                </button>
+                <ul className="fx-nav-list">
+                  {section.items.map((menuItem) => (
+                    <li key={menuItem.to}>
+                      <Link to={menuItem.to} onClick={() => { setQuery(''); scrollToTop(); }} data-tooltip={menuItem.label}
+                        className={'fx-nav-link' + (activeHref === menuItem.to ? ' active' : '')}
+                        aria-current={activeHref === menuItem.to ? 'page' : undefined}>
+                        <span className="fx-nav-icon"><i className={'bx ' + menuItem.icon}></i></span>
+                        <span className="fx-nav-label">{menuItem.label}</span>
+                        {menuItem.badge && <NotificationBadge />}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          {!visibleSections.length && (
+            <div className="fx-nav-empty">
+              <i className="bx bx-search-alt"></i>
+              No menu items match “{query.trim()}”
+            </div>
+          )}
+        </nav>
       </aside>
       <div className="fx-sidebar-backdrop" onClick={closeMobileSidebar}></div>
     </>

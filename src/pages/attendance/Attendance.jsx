@@ -30,7 +30,8 @@ import {
   reverseListViewDays,
   describeAttendance,
   describeLeave,
-  describeAbsent
+  describeAbsent,
+  buildHolidayEvents,
 } from './attendanceHelpers';
 import AttendanceDetailModal from './AttendanceDetailModal';
 import LeaveDetailModal from './LeaveDetailModal';
@@ -64,6 +65,36 @@ export default function Attendance() {
   const activeViewRef = useRef('dayGridMonth');
   // The employee the calendar is filtered to ('' = everyone)
   const selectedUserRef = useRef('');
+  // holidays.getCalendar answers per "year|user" (the calendar asks again for every month shown)
+  const holidayCache = useRef({});
+
+  /**
+   * Holiday events of the calendar's visible range: fixed holidays (office closed) and the
+   * optional holidays. When one person's calendar is shown (an employee picked, or a user
+   * without attendance_viewAll seeing their own), the optional days that person chose are
+   * marked as their optional leave.
+   */
+  const loadHolidayEvents = (info, success) => {
+    const forUserId = canViewAllAttendance ? selectedUserRef.current : '';
+    const onePerson = !canViewAllAttendance || !!forUserId;
+    const years = [];
+    for (let y = info.start.getFullYear(); y <= new Date(info.end.getTime() - 1).getFullYear(); y++) years.push(y);
+
+    const loadYear = (year) => {
+      const key = year + '|' + forUserId;
+      if (!holidayCache.current[key]) {
+        holidayCache.current[key] = new Promise((resolve) => {
+          const args = forUserId ? [year, forUserId] : [year];
+          api.call('holidays.getCalendar', ...args, (error, data) => resolve(!error && data ? data : null));
+        });
+      }
+      return holidayCache.current[key];
+    };
+
+    Promise.all(years.map(loadYear)).then((calendars) => {
+      success(buildHolidayEvents(calendars.filter(Boolean), onePerson));
+    });
+  };
 
   // Load attendance records
   const loadAttendance = (userId = null) => {
@@ -200,7 +231,12 @@ export default function Attendance() {
         },
         buttonText: { today: 'Today' },
         initialView: activeViewRef.current,
-        eventSources: [{ id: 'attendance', events: loadedEvents }],
+        eventSources: [
+          { id: 'attendance', events: loadedEvents },
+          { id: 'holidays', events: loadHolidayEvents },
+        ],
+        // Holidays first in a day, then FullCalendar's default order (start, duration, title)
+        eventOrder: '-isHoliday,start,-duration,allDay,title',
         eventClick: function (info) {
           const data = info.event.extendedProps;
           if (data.type === 'daySummary') {
@@ -218,7 +254,9 @@ export default function Attendance() {
             if (wanted !== loadedEvents) {
               loadedEvents = wanted;
               const calendar = info.view.calendar;
-              calendar.getEventSources().forEach((existing) => existing.remove());
+              // Only the attendance layer is swapped; the holidays layer stays
+              const existing = calendar.getEventSourceById('attendance');
+              if (existing) existing.remove();
               calendar.addEventSource({ id: 'attendance', events: wanted });
             }
           }
@@ -547,6 +585,9 @@ export default function Attendance() {
                 <span className="att-chip att-leave"><span className="att-dot"></span>Leave</span>
                 <span className="att-chip att-wfh"><span className="att-dot"></span>WFH</span>
                 <span className="att-chip att-absent"><span className="att-dot"></span>Absent</span>
+                <span className="att-chip att-holiday"><span className="att-dot"></span>Holiday</span>
+                <span className="att-chip att-optional-chosen"><span className="att-dot"></span>Optional leave</span>
+                <span className="att-chip att-optional"><span className="att-dot"></span>Optional holiday</span>
               </div>
             </div>
 

@@ -21,7 +21,7 @@ import {
   getAttachmentId,
   initSelect2,
   moveItem,
-  profileFullName,
+  userDisplayName,
   uploadProjectAttachments
 } from './projectHelpers';
 import { enrichTemplateTasks, excelRowsToTasks } from './projectTaskDates';
@@ -62,8 +62,8 @@ function isInFolder(attachment, folderId) {
 function toMemberCard(user) {
   return {
     userId: user._id,
-    firstName: user.profile.firstName,
-    lastName: user.profile.lastName,
+    firstName: (user.profile && user.profile.firstName) || user.username || '',
+    lastName: (user.profile && user.profile.lastName) || '',
     email: user.emails && user.emails[0] ? user.emails[0].address : ''
   };
 }
@@ -796,14 +796,12 @@ export default function ProjectFormModal({
   const clickCalendarTab = (event) => {
     event.preventDefault();
 
-    const projectId = editProjectId;
-    if (!projectId) {
-      return;
-    }
+    // A new (unsaved) project: show the tasks added or imported in this form so far
+    const unsavedTasks = editProjectId ? null : [...(formTasks.list || []), ...(importedTasks || [])];
 
     // Load calendar after a short delay to ensure tab is visible
     setTimeout(() => {
-      initializeProjectCalendar(projectId, user);
+      initializeProjectCalendar(editProjectId, user, unsavedTasks);
     }, 100);
   };
 
@@ -868,8 +866,8 @@ export default function ProjectFormModal({
     let assignedToName = '';
     if (assignedTo) {
       const manager = allUsersList.find(u => u._id === assignedTo);
-      if (manager && manager.profile) {
-        assignedToName = profileFullName(manager.profile);
+      if (manager) {
+        assignedToName = userDisplayName(manager);
       }
     }
 
@@ -1115,7 +1113,7 @@ export default function ProjectFormModal({
                         <select className="form-select projectModalSelect" id="assignedTo" name="assignedTo" style={{ width: '100%' }}>
                           <option value="">Select Project Manager...</option>
                           {(allUsersList || []).map((u) => (
-                            <option key={u._id} value={u._id}>{profileFullName(u.profile)}</option>
+                            <option key={u._id} value={u._id}>{userDisplayName(u)}</option>
                           ))}
                         </select>
                       </div>
@@ -1132,7 +1130,7 @@ export default function ProjectFormModal({
                       <select className="form-select projectModalSelect" id="memberSelect" style={{ width: '100%' }}>
                         <option value="">Choose a team member...</option>
                         {(allUsersList || []).map((u) => {
-                          const name = profileFullName(u.profile);
+                          const name = userDisplayName(u);
                           const email = u.emails && u.emails[0] ? u.emails[0].address : '';
                           return (
                             <option key={u._id} value={u._id} data-name={name} data-email={email}>{`${name} (${email})`}</option>

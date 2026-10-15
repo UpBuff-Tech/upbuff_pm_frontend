@@ -7,6 +7,19 @@
 .att-leave { --att: #4f46e5; }
 .att-wfh { --att: #0891b2; }
 .att-absent { --att: #dc2626; }
+.att-holiday { --att: #e11d48; }
+.att-optional-chosen { --att: #7c3aed; }
+.att-optional { --att: #a78bfa; }
+
+/* Holiday chips are information, not a record to open */
+.att-calendar .fc-event.att-holiday,
+.att-calendar .fc-event.att-optional,
+.att-calendar .fc-event.att-optional-chosen {
+  cursor: default;
+}
+.att-calendar .fc-event.att-optional {
+  opacity: 0.8;
+}
 
 /* ---- Header ---- */
 .att-header {

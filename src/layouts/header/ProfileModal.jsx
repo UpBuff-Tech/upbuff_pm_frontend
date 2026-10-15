@@ -54,6 +54,21 @@ function readFileAsDataURL(file) {
   });
 }
 
+function formatSize(bytes) {
+  if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/** A text input with an icon inside its left edge. */
+function IconInput({ icon, ...inputProps }) {
+  return (
+    <div className="fx-input-icon">
+      <i className={'bx ' + icon}></i>
+      <input className="form-control" {...inputProps} />
+    </div>
+  );
+}
+
 function AttachmentLinks({ attachments }) {
   return attachments.map((att, index) => (
     <a key={index} href={att.url || att} target="_blank" rel="noopener noreferrer" className="fx-file-chip">
@@ -90,6 +105,9 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
   const [detail, setDetail] = useState(EMPTY_DETAIL);
   const [edit, setEdit] = useState(EMPTY_EDIT);
   const [editPhotoPreview, setEditPhotoPreview] = useState('');
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const [newFiles, setNewFiles] = useState([]);
+  const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const photoInput = useRef(null);
@@ -98,6 +116,8 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
   const startEditing = (fromDetail) => {
     setEdit(editValues(fromDetail));
     setEditPhotoPreview(fromDetail.photo);
+    setPhotoRemoved(false);
+    setNewFiles([]);
     photoInput.current.value = '';
     attachmentsInput.current.value = '';
     setActiveTab('edit');
@@ -177,8 +197,35 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
         e.target.value = '';
         return;
       }
+      setPhotoRemoved(false);
       readFileAsDataURL(file).then(setEditPhotoPreview);
     }
+  };
+
+  const removeProfilePhoto = () => {
+    photoInput.current.value = '';
+    setEditPhotoPreview('');
+    setPhotoRemoved(true);
+  };
+
+  /** Adds picked or dropped files to the attachments to upload; files over the limit are skipped. */
+  const addFiles = (fileList) => {
+    const files = Array.from(fileList || []);
+    const tooBig = files.filter((file) => file.size > MAX_FILE_SIZE);
+    tooBig.forEach((file) => toastr.error(`${file.name} exceeds 10MB limit`));
+    const accepted = files.filter((file) => file.size <= MAX_FILE_SIZE);
+    if (accepted.length) setNewFiles((current) => [...current, ...accepted]);
+    attachmentsInput.current.value = '';
+  };
+
+  const removeNewFile = (index) => {
+    setNewFiles((current) => current.filter((_, i) => i !== index));
+  };
+
+  const dropFiles = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(e.dataTransfer.files);
   };
 
   const saveProfile = () => {
@@ -202,19 +249,14 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
     const photoFile = photoInput.current.files[0];
     const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
 
-    // Handle attachments
-    const attFiles = attachmentsInput.current.files;
-    const attPromises = Array.from(attFiles || []).map(file => {
-      if (file.size > MAX_FILE_SIZE) {
-        return Promise.reject(new Error(`${file.name} exceeds 10MB limit`));
-      }
-      return readFileAsDataURL(file)
-        .then((data) => ({ name: file.name, type: file.type, size: file.size, data }));
-    });
+    // Handle attachments (already size-checked when added)
+    const attPromises = newFiles.map((file) => readFileAsDataURL(file)
+      .then((data) => ({ name: file.name, type: file.type, size: file.size, data })));
 
     Promise.all([photoPromise, ...attPromises])
       .then(([profilePhoto, ...attachments]) => {
         profileData.profilePhoto = profilePhoto;
+        profileData.removeProfilePhoto = !profilePhoto && photoRemoved;
         if (attachments.length > 0) {
           profileData.attachments = attachments;
         }
@@ -241,7 +283,8 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
             companyEmail: profileData.companyEmail || 'N/A',
             address: profileData.address || 'N/A',
             // Update profile photo in details view
-            photo: profilePhoto || current.photo,
+            photo: profilePhoto || (photoRemoved ? '' : current.photo),
+            attachments: [...(current.attachments || []), ...attachments.map(({ name, type, size }) => ({ name, type, size }))],
           }));
 
           // Switch back to details tab
@@ -275,7 +318,7 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
                 <span id="menuDetailProfilePlaceholder" className="fx-profile-photo-initials">{initialsOf(detail.nameHeader)}</span>
               )}
               {activeTab === 'edit' && (
-                <label htmlFor="editProfilePhoto" className="fx-profile-photo-edit" title="Change photo">
+                <label htmlFor="editProfilePhoto" className="fx-profile-photo-overlay" title="Change photo">
                   <i className="bx bx-camera"></i>
                 </label>
               )}
@@ -335,63 +378,141 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
             {/* ===== EDIT TAB ===== */}
             <div id="profileEditSection" style={{ display: activeTab === 'edit' ? undefined : 'none' }}>
               <form id="profileEditForm" onSubmit={(e) => { e.preventDefault(); saveProfile(); }}>
-                <h6 className="fx-section-title mt-0">Personal information</h6>
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="editFirstName">First name <span className="text-danger">*</span></label>
-                    <input type="text" className="form-control" id="editFirstName" name="firstName" required
-                      value={edit.firstName} onChange={changeEdit} />
+                {/* Photo */}
+                <div className="fx-photo-card">
+                  <div className="fx-photo-card-preview">
+                    {editPhotoPreview
+                      ? <img src={editPhotoPreview} alt="" />
+                      : <span>{initialsOf(`${edit.firstName} ${edit.lastName}`.trim() || detail.nameHeader)}</span>}
                   </div>
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="editLastName">Last name</label>
-                    <input type="text" className="form-control" id="editLastName" name="lastName"
-                      value={edit.lastName} onChange={changeEdit} />
+                  <div className="fx-photo-card-text">
+                    <strong>Profile photo</strong>
+                    <small>JPG, PNG or GIF · max 10MB. A square image works best.</small>
                   </div>
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="editUsername">Username</label>
-                    <input type="text" className="form-control" id="editUsername" name="username" disabled
-                      value={edit.username} onChange={changeEdit} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="editContact">Contact number</label>
-                    <input type="text" className="form-control" id="editContact" name="contact"
-                      value={edit.contact} onChange={changeEdit} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="profileCompanyEmail">Company email</label>
-                    <input type="email" className="form-control" id="profileCompanyEmail" name="companyEmail"
-                      value={edit.companyEmail} onChange={changeEdit} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label" htmlFor="profilePersonalEmail">Personal email</label>
-                    <input type="email" className="form-control" id="profilePersonalEmail" name="personalEmail"
-                      value={edit.personalEmail} onChange={changeEdit} />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label" htmlFor="editAddress">Address</label>
-                    <textarea className="form-control" id="editAddress" name="address" rows="2"
-                      value={edit.address} onChange={changeEdit}></textarea>
+                  <div className="fx-photo-card-actions">
+                    <label htmlFor="editProfilePhoto" className="btn btn-primary btn-sm mb-0">
+                      <i className="bx bx-upload me-1"></i>{editPhotoPreview ? 'Change' : 'Upload'}
+                    </label>
+                    {editPhotoPreview && (
+                      <button type="button" className="btn btn-sm fx-btn-danger-ghost" onClick={removeProfilePhoto}>
+                        <i className="bx bx-trash me-1"></i>Remove
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                <h6 className="fx-section-title">Profile photo</h6>
-                <div className="fx-upload-row">
-                  <label htmlFor="editProfilePhoto" className="btn btn-outline-secondary btn-sm mb-0">
-                    <i className="bx bx-upload me-1"></i>Upload new photo
-                  </label>
-                  <small className="text-muted">JPG, PNG or GIF · max 10MB</small>
-                </div>
+                {photoRemoved && !editPhotoPreview && detail.photo && (
+                  <div className="fx-inline-note">
+                    <i className="bx bx-info-circle"></i>
+                    Your photo will be removed when you save.
+                    <button type="button" className="btn btn-link btn-sm p-0" onClick={() => {
+                      setPhotoRemoved(false);
+                      setEditPhotoPreview(detail.photo);
+                    }}>Undo</button>
+                  </div>
+                )}
                 <input type="file" className="d-none" id="editProfilePhoto" accept="image/jpeg,image/png,image/gif"
                   ref={photoInput} onChange={changeProfilePhoto} />
 
-                <h6 className="fx-section-title">Attachments</h6>
-                {hasAttachments && (
-                  <div id="editExistingAttachments" className="fx-file-list mb-2">
-                    <AttachmentLinks attachments={detail.attachments} />
+                {/* Name */}
+                <div className="fx-form-card">
+                  <div className="fx-form-card-head">
+                    <span className="fx-form-card-icon"><i className="bx bx-user"></i></span>
+                    <div>
+                      <h6>Personal information</h6>
+                      <small>How your name appears across the workspace</small>
+                    </div>
                   </div>
-                )}
-                <input type="file" className="form-control" id="editAttachments" multiple ref={attachmentsInput} />
-                <small className="text-muted d-block mt-1">Multiple files allowed, max 10MB each</small>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor="editFirstName">First name <span className="text-danger">*</span></label>
+                      <input type="text" className="form-control" id="editFirstName" name="firstName" required
+                        value={edit.firstName} onChange={changeEdit} placeholder="First name" />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor="editLastName">Last name</label>
+                      <input type="text" className="form-control" id="editLastName" name="lastName"
+                        value={edit.lastName} onChange={changeEdit} placeholder="Last name" />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label" htmlFor="editUsername">Username</label>
+                      <IconInput icon="bx-lock-alt" type="text" id="editUsername" name="username" disabled
+                        value={edit.username} onChange={changeEdit} />
+                      <small className="fx-field-hint">Your username can't be changed.</small>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div className="fx-form-card">
+                  <div className="fx-form-card-head">
+                    <span className="fx-form-card-icon"><i className="bx bx-phone"></i></span>
+                    <div>
+                      <h6>Contact details</h6>
+                      <small>Where colleagues can reach you</small>
+                    </div>
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor="editContact">Contact number</label>
+                      <IconInput icon="bx-phone" type="text" id="editContact" name="contact"
+                        value={edit.contact} onChange={changeEdit} placeholder="+91 98765 43210" />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor="profileCompanyEmail">Company email</label>
+                      <IconInput icon="bx-buildings" type="email" id="profileCompanyEmail" name="companyEmail"
+                        value={edit.companyEmail} onChange={changeEdit} placeholder="name@company.com" />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label" htmlFor="profilePersonalEmail">Personal email</label>
+                      <IconInput icon="bx-envelope" type="email" id="profilePersonalEmail" name="personalEmail"
+                        value={edit.personalEmail} onChange={changeEdit} placeholder="name@example.com" />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label" htmlFor="editAddress">Address</label>
+                      <textarea className="form-control" id="editAddress" name="address" rows="2"
+                        value={edit.address} onChange={changeEdit} placeholder="Street, city, state, PIN"></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attachments */}
+                <div className="fx-form-card">
+                  <div className="fx-form-card-head">
+                    <span className="fx-form-card-icon"><i className="bx bx-paperclip"></i></span>
+                    <div>
+                      <h6>Attachments</h6>
+                      <small>Documents such as ID proofs or certificates</small>
+                    </div>
+                  </div>
+                  {hasAttachments && (
+                    <div id="editExistingAttachments" className="fx-file-list mb-3">
+                      <AttachmentLinks attachments={detail.attachments} />
+                    </div>
+                  )}
+                  <label htmlFor="editAttachments" className={'fx-dropzone' + (dragOver ? ' is-over' : '')}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)} onDrop={dropFiles}>
+                    <span className="fx-dropzone-icon"><i className="bx bx-cloud-upload"></i></span>
+                    <span><strong>Click to upload</strong> or drag and drop</span>
+                    <small>Multiple files allowed, max 10MB each</small>
+                  </label>
+                  <input type="file" className="d-none" id="editAttachments" multiple ref={attachmentsInput}
+                    onChange={(e) => addFiles(e.target.files)} />
+                  {newFiles.length > 0 && (
+                    <ul className="fx-new-files">
+                      {newFiles.map((file, index) => (
+                        <li key={file.name + index}>
+                          <i className="bx bx-file"></i>
+                          <span className="fx-new-file-name">{file.name}</span>
+                          <span className="fx-new-file-size">{formatSize(file.size)}</span>
+                          <button type="button" onClick={() => removeNewFile(index)} aria-label={'Remove ' + file.name}>
+                            <i className="bx bx-x"></i>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -406,8 +527,8 @@ export default function ProfileModal({ openRequest, initialTab = 'details' }) {
           </div>
 
           {activeTab === 'edit' && (
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={(e) => showTab(e, 'details')} disabled={saving}>Cancel</button>
+            <div className="modal-footer fx-profile-footer">
+              <button type="button" className="btn btn-outline-secondary" onClick={(e) => showTab(e, 'details')} disabled={saving}>Cancel</button>
               <button type="button" className="btn btn-primary" id="btnSaveProfile" disabled={saving} onClick={saveProfile}>
                 {saving ? (
                   <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Saving…</>

@@ -317,11 +317,47 @@ export function buildCalendarEvents(attendanceRecords, leaveRecords, absentDays 
   return events;
 }
 
+/**
+ * Calendar events of the holiday policy (holidays.getCalendar answers, one per year):
+ * fixed holidays, and the optional holidays - the chosen ones as "Optional leave" when
+ * onePerson (one person's calendar is shown, so their picks are known).
+ */
+export function buildHolidayEvents(calendars, onePerson) {
+  const events = [];
+  calendars.forEach((calendar) => {
+    (calendar.fixed || []).forEach((holiday) => {
+      events.push({
+        title: holiday.name, start: holiday.date, allDay: true,
+        classNames: ['att-event', 'att-holiday'],
+        isHoliday: true,
+        extendedProps: { type: 'holiday', tip: holiday.name + ' · Holiday (office closed)' },
+      });
+    });
+    const chosen = new Set(onePerson ? (calendar.mySelection || []) : []);
+    (calendar.optional || []).forEach((holiday) => {
+      const isChosen = chosen.has(holiday.date);
+      events.push({
+        title: holiday.name, start: holiday.date, allDay: true,
+        classNames: ['att-event', isChosen ? 'att-optional-chosen' : 'att-optional'],
+        isHoliday: true,
+        extendedProps: {
+          type: 'holiday',
+          tip: holiday.name + (isChosen ? ' · Optional leave (chosen)' : ' · Optional holiday'),
+        },
+      });
+    });
+  });
+  return events;
+}
+
 // Hover text of a calendar event
 export function getEventTooltip(event) {
   const data = event.extendedProps;
   let tooltipText = event.title;
 
+  if (data.type === 'holiday') {
+    return data.tip;
+  }
   if (data.type === 'attendance') {
     tooltipText = data.userName
       ? `${data.userName} - ${data.status === 'punched_in' ? 'Currently Working' : 'Present'}`

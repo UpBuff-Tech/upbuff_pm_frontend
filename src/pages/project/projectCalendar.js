@@ -18,6 +18,8 @@ const STATUS_COLORS = {
 };
 
 let projectCalendar = null;
+// Re-measures the calendar when its container changes size (see renderProjectCalendar)
+let calendarResizeObserver = null;
 
 /** Convert tasks to calendar events */
 function tasksToEvents(tasks) {
@@ -97,7 +99,13 @@ function showEventDetails(info, loggedInUser) {
 /**
  * Initialize FullCalendar with project tasks
  */
-export function initializeProjectCalendar(projectId, loggedInUser) {
+export function initializeProjectCalendar(projectId, loggedInUser, unsavedTasks) {
+  // A project that is not saved yet has no tasks on the server: show the tasks of the form
+  if (!projectId) {
+    renderProjectCalendar(unsavedTasks || [], loggedInUser);
+    return;
+  }
+
   // Load tasks for the project
   api.call('projectTasks.getByProject', projectId, (error, tasks) => {
     if (error) {
@@ -105,56 +113,74 @@ export function initializeProjectCalendar(projectId, loggedInUser) {
       toastr.error('Failed to load tasks for calendar');
       return;
     }
+    renderProjectCalendar(tasks, loggedInUser);
+  });
+}
 
-    const events = tasksToEvents(tasks);
+/** Draw the calendar of the given tasks (an empty month when none of them has dates). */
+function renderProjectCalendar(tasks, loggedInUser) {
+  const events = tasksToEvents(tasks);
 
-    // Destroy existing calendar if it exists
-    destroyProjectCalendar();
+  // Destroy existing calendar if it exists
+  destroyProjectCalendar();
 
-    // Initialize FullCalendar (loaded dynamically)
-    const calendarEl = document.getElementById('projectCalendar');
-    if (!calendarEl) {
-      console.error('Calendar element not found');
-      return;
-    }
+  // Initialize FullCalendar (loaded dynamically)
+  const calendarEl = document.getElementById('projectCalendar');
+  if (!calendarEl) {
+    console.error('Calendar element not found');
+    return;
+  }
 
-    Promise.all([
-      import('@fullcalendar/core'),
-      import('@fullcalendar/daygrid'),
-      import('@fullcalendar/timegrid'),
-      import('@fullcalendar/list'),
-      import('@fullcalendar/interaction')
-    ]).then(([core, dayGrid, timeGrid, list, interaction]) => {
-      projectCalendar = new core.Calendar(calendarEl, {
-        plugins: [dayGrid.default, timeGrid.default, list.default, interaction.default],
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,listMonth'
-        },
-        events: events,
-        eventClick: (info) => showEventDetails(info, loggedInUser),
-        eventDidMount: function (info) {
-          // Add tooltip on hover
-          $(info.el).tooltip({
-            title: `${info.event.title} (${info.event.extendedProps.status})`,
-            placement: 'top',
-            trigger: 'hover',
-            container: 'body'
-          });
-        },
-        height: 'auto',
-        contentHeight: 550
-      });
-
-      projectCalendar.render();
+  Promise.all([
+    import('@fullcalendar/core'),
+    import('@fullcalendar/daygrid'),
+    import('@fullcalendar/timegrid'),
+    import('@fullcalendar/list'),
+    import('@fullcalendar/interaction')
+  ]).then(([core, dayGrid, timeGrid, list, interaction]) => {
+    projectCalendar = new core.Calendar(calendarEl, {
+      plugins: [dayGrid.default, timeGrid.default, list.default, interaction.default],
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,listMonth'
+      },
+      events: events,
+      eventClick: (info) => showEventDetails(info, loggedInUser),
+      eventDidMount: function (info) {
+        // Add tooltip on hover
+        $(info.el).tooltip({
+          title: `${info.event.title} (${info.event.extendedProps.status})`,
+          placement: 'top',
+          trigger: 'hover',
+          container: 'body'
+        });
+      },
+      height: 'auto',
+      contentHeight: 550
     });
+
+    projectCalendar.render();
+
+    // The Calendar tab fades in, so at first render the container can still be 0px wide and the
+    // month grid collapses. Re-measure whenever the container's size changes (tab shown, modal
+    // resized, window resized).
+    if (typeof ResizeObserver !== 'undefined') {
+      calendarResizeObserver = new ResizeObserver(() => {
+        if (projectCalendar && calendarEl.offsetWidth > 0) projectCalendar.updateSize();
+      });
+      calendarResizeObserver.observe(calendarEl);
+    }
   });
 }
 
 /** Remove the calendar (before building a new one, and when the page goes away). */
 export function destroyProjectCalendar() {
+  if (calendarResizeObserver) {
+    calendarResizeObserver.disconnect();
+    calendarResizeObserver = null;
+  }
   if (projectCalendar) {
     projectCalendar.destroy();
     projectCalendar = null;

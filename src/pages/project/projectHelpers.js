@@ -107,9 +107,16 @@ export function getCompanyName(clientsList, companyId) {
   return client ? client.clientName : 'Unknown';
 }
 
-/** "First Last" of a user profile. */
+/** "First Last" of a user profile ('' when the user has no profile). */
 export function profileFullName(profile) {
+  if (!profile) return '';
   return `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+}
+
+/** A user's display name: "First Last", else the username, else the e-mail address. */
+export function userDisplayName(user) {
+  if (!user) return '';
+  return profileFullName(user.profile) || user.username || (user.emails && user.emails[0] && user.emails[0].address) || 'Unnamed user';
 }
 
 /**
