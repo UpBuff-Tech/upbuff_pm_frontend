@@ -53,7 +53,10 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   const [raisedLimit, setRaisedLimit] = useState({ scopeKey, limit: PAGE_SIZE });
   const limit = raisedLimit.scopeKey === scopeKey ? raisedLimit.limit : PAGE_SIZE;
 
-  const { docs, ready } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit]);
+  // Own changes reload the column at once (any data-changing call); the interval only picks up
+  // colleagues' changes, so 15s is enough - 5 columns polling every 5s queued up the page's requests.
+  const { docs, ready } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit],
+    { intervalMs: 15000 });
 
   // The publication is "ready" again only once docs for the CURRENT filters
   // and limit have arrived (the spinner shows while a new page is loading).

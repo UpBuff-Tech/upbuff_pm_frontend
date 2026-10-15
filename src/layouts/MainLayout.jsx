@@ -17,6 +17,7 @@ import AttendanceRevokeModal from '../components/attendanceRevokeModal/Attendanc
 import NotificationPopup from '../components/notifications/NotificationPopup';
 import PageLoader from '../components/loader/PageLoader';
 import { PageSkeleton } from '../components/skeleton/Skeleton';
+import PageErrorBoundary from '../components/PageErrorBoundary';
 
 // Pages that are shown without the menu even when a user is logged in.
 const PUBLIC_PATHS = ['/login', '/signup', '/fingerprint-login', '/login/forgetPassword', '/signout'];
@@ -104,9 +105,11 @@ export default function MainLayout({ children }) {
               <Menu />
               <div className="layout-page">
                 <Topbar />
-                <Suspense fallback={<PageSkeleton />}>
-                  {children}
-                </Suspense>
+                <PageErrorBoundary resetKey={location.pathname}>
+                  <Suspense fallback={<PageSkeleton />}>
+                    {children}
+                  </Suspense>
+                </PageErrorBoundary>
                 <Footer />
               </div>
               <div className="content-backdrop fade"></div>

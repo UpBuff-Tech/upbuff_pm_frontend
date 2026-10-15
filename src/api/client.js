@@ -115,13 +115,21 @@ export async function request(method, url, body) {
 // Meteor ran one client's method calls one after another, in the order they were made, unless the
 // method called this.unblock(). We keep the same rule so pages behave exactly as before
 // (e.g. "save" followed by "reload list" always sees the saved data).
+// Only writes form the queue: a read waits for the writes made before it, but reads never wait
+// for each other - otherwise a page's 5 initial loads cost 5 server round-trips one after another.
 let queue = Promise.resolve();
 
 function runInOrder(name, work) {
   if (UNBLOCKED_METHODS.has(name)) return work();
   const result = queue.then(work, work);
-  queue = result.catch(() => {});
+  if (!isReadOnlyMethod(name)) queue = result.catch(() => {});
   return result;
+}
+
+/** 'projectTasks.getKanbanColumnCount' -> true: the method only reads data. */
+function isReadOnlyMethod(name) {
+  const action = name.slice(name.lastIndexOf('.') + 1);
+  return /^(get|list|count|find|search|fetch)|Count$/.test(action);
 }
 
 /**
@@ -134,7 +142,10 @@ export function call(name, ...args) {
 
   // undefined arguments are sent as null so the positions stay correct.
   const body = args.map((arg) => (arg === undefined ? null : arg));
-  const promise = runInOrder(name, () => request('POST', '/rpc/' + name, body)).finally(notifyDataChanged);
+  let promise = runInOrder(name, () => request('POST', '/rpc/' + name, body));
+  // Only a call that may have changed data makes the live lists reload; a read (getX, list...)
+  // re-fetching every list would just flood the server with requests.
+  if (!isReadOnlyMethod(name)) promise = promise.finally(notifyDataChanged);
 
   if (!callback) return promise;
   promise.then((result) => callback(undefined, result), (error) => callback(error));
