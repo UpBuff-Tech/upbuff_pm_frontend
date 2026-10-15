@@ -80,6 +80,48 @@
   background: var(--fx-border);
 }
 
+/* ---- "Who's In" register link ---- */
+.fx-whos-in {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--fx-border);
+  border-radius: 999px;
+  background: var(--fx-surface);
+  color: var(--fx-text-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.fx-whos-in i {
+  color: var(--fx-success);
+  font-size: 1.15rem;
+}
+
+.fx-whos-in:hover,
+.fx-whos-in.active {
+  border-color: var(--fx-primary);
+  background: var(--fx-primary-soft);
+  color: var(--fx-primary);
+}
+
+@media (max-width: 575.98px) {
+  .fx-whos-in {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .fx-whos-in span {
+    display: none;
+  }
+}
+
 /* ---- Notification bell (NotificationBell.jsx) ---- */
 .notification-bell-container {
   position: relative;

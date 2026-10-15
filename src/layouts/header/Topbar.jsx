@@ -1,8 +1,8 @@
 // The bar across the top of every logged-in page: menu toggle, page title,
-// notifications and the user menu.
+// the "Who's In" register link, notifications and the user menu.
 
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import NotificationBell from '../../components/notifications/NotificationBell';
 import ProfileModal from './ProfileModal';
@@ -36,6 +36,7 @@ const PAGE_TITLES = [
   ['/client/list', 'People', 'Clients'],
   ['/attendance', 'People', 'Attendance'],
   ['/leaveRequest', 'People', 'Leave Requests'],
+  ['/leaveRegister', 'People', "Who's In"],
   ['/suggestions', 'Administration', 'Suggestions'],
   ['/syncHealth', 'Administration', 'System Incidents'],
   ['/systemConfig', 'Administration', 'System Configuration'],
@@ -106,6 +107,14 @@ export default function Topbar() {
         </div>
 
         <div className="fx-topbar-actions">
+          {role !== 'client' && (
+            <Link to="/leaveRegister" title="Who's in today: available, remote and on leave"
+              className={'fx-whos-in' + (location.pathname === '/leaveRegister' ? ' active' : '')}>
+              <i className="bx bx-group"></i>
+              <span>Who's In</span>
+            </Link>
+          )}
+
           <NotificationBell />
 
           <span className="fx-topbar-divider"></span>

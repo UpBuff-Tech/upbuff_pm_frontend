@@ -38,6 +38,7 @@ const ClientTicket = lazy(() => import('./pages/clientTicket/ClientTicket'));
 const ClientTask = lazy(() => import('./pages/clientTask/ClientTask'));
 const Attendance = lazy(() => import('./pages/attendance/Attendance'));
 const LeaveRequest = lazy(() => import('./pages/leaveRequest/LeaveRequest'));
+const LeaveRegister = lazy(() => import('./pages/leaveRegister/LeaveRegister'));
 const Suggestions = lazy(() => import('./pages/suggestions/Suggestions'));
 const SyncHealth = lazy(() => import('./pages/syncHealth/SyncHealth'));
 const SystemConfig = lazy(() => import('./pages/systemConfig/SystemConfig'));
@@ -159,6 +160,7 @@ export default function App() {
         <Route path="/client/tasks" element={secure(<ClientTask />)} />
         <Route path="/attendance/list" element={secure(<Attendance />)} />
         <Route path="/leaveRequest/list" element={secure(<LeaveRequest />)} />
+        <Route path="/leaveRegister" element={secure(<LeaveRegister />)} />
         <Route path="/suggestions/list" element={secure(<Suggestions />)} />
         <Route path="/syncHealth/list" element={secure(<SyncHealth />)} />
         <Route path="/systemConfig/list" element={secure(<SystemConfig />)} />

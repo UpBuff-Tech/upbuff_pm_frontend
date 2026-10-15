@@ -15,6 +15,7 @@ export const UNBLOCKED_METHODS = new Set([
   "leaveRequests.getForCalendar",
   "leaveRequests.getMyRequests",
   "leaveRequests.getPendingApprovals",
+  "leaveRequests.getRegister",
   "notifications.getForUser",
   "notifications.getUnreadCount",
   "project.getAllForDropdown",
