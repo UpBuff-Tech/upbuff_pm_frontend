@@ -95,7 +95,6 @@ export default function TicketTable({ tickets, onView, onEdit, onSendEmail, onDe
                         <i className="bx bx-dots-vertical-rounded"></i>
                       </button>
                       <ul className="dropdown-menu dropdown-menu-end">
-                        <li><a className="dropdown-item viewTicket" href="#" data-id={ticket._id} onClick={(event) => onView(event, ticket._id)}><i className="bx bx-show me-2"></i>View</a></li>
                         <li><a className="dropdown-item editTicket" href="#" data-id={ticket._id} onClick={(event) => onEdit(event, ticket._id)}><i className="bx bx-edit-alt me-2"></i>Edit</a></li>
                         <li><a className="dropdown-item staffSendEmailBtn" href="#" data-id={ticket._id} onClick={(event) => onSendEmail(event, ticket._id)}><i className="bx bx-envelope me-2"></i>Send email</a></li>
                         <li><hr className="dropdown-divider" /></li>

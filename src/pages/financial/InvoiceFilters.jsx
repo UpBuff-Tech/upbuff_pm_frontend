@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { initializeSelect2 } from '../../lib/customFunctions';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 /**
  * Filters of a tab: search box, status dropdown (select2) and the Reset button.
@@ -18,7 +19,7 @@ export default function InvoiceFilters({ list, searchId, searchPlaceholder, stat
 
     return () => {
       select.off('change', onStatusChange);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, []);
 

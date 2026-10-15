@@ -13,7 +13,8 @@ import ClientCard, { productNamesText } from './ClientCard';
 import ClientDetailModal, { buildClientDetail } from './ClientDetailModal';
 import ClientDeleteModal from './ClientDeleteModal';
 import './client.css';
-import { CardGridSkeleton } from '../../components/skeleton/Skeleton';
+import ClientTableView from './ClientTableView';
+import { CardGridSkeleton, TableSkeleton } from '../../components/skeleton/Skeleton';
 
 /** True when the search term appears in the client's name, ID, email, phone or products. */
 function clientMatchesSearch(client, searchTerm) {
@@ -35,6 +36,9 @@ export default function Client() {
   // Search box: the ids of the cards the last search filtered out
   const [searchText, setSearchText] = useState('');
   const [hiddenClientIds, setHiddenClientIds] = useState([]);
+
+  // 'table' or 'card' - the table opens first, the Card button switches
+  const [view, setView] = useState('table');
 
   // Detail modal
   const [detailLoading, setDetailLoading] = useState(false);
@@ -178,11 +182,24 @@ export default function Client() {
             <h4 className="fw-bold mb-1">Client Management</h4>
             <p className="text-muted mb-0">Manage client information, products, and support details</p>
           </div>
-          {userCan('client_create') && (
-            <button type="button" className="btn btn-primary createClient" onClick={handleCreateClient}>
-              <i className="fa fa-plus me-1"></i> Add Client
-            </button>
-          )}
+          <div className="d-flex gap-2">
+            {/* View Toggle Buttons */}
+            <div className="fx-view-toggle" role="group" aria-label="View">
+              <button type="button" className={view === 'table' ? 'active' : ''} aria-pressed={view === 'table'}
+                onClick={() => setView('table')}>
+                <i className="bx bx-list-ul"></i>Table
+              </button>
+              <button type="button" className={view === 'card' ? 'active' : ''} aria-pressed={view === 'card'}
+                onClick={() => setView('card')}>
+                <i className="bx bx-grid-alt"></i>Cards
+              </button>
+            </div>
+            {userCan('client_create') && (
+              <button type="button" className="btn btn-primary createClient" onClick={handleCreateClient}>
+                <i className="fa fa-plus me-1"></i> Add Client
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -208,13 +225,18 @@ export default function Client() {
         <section className="content">
           {pagination.ready() ? (
             <>
-              {/* Client Cards */}
-              <div className="row g-2" id="clientCardsContainer">
-                {clientList.map((client) => (
-                  <ClientCard key={client._id} client={client} hidden={hiddenClientIds.includes(client._id)}
-                    onView={handleView} onEdit={handleEdit} onDelete={handleDeactivate} />
-                ))}
-              </div>
+              {view === 'table' ? (
+                <ClientTableView clients={clientList} hiddenClientIds={hiddenClientIds}
+                  onView={handleView} onEdit={handleEdit} onDelete={handleDeactivate} />
+              ) : (
+                /* Client Cards */
+                <div className="row g-2" id="clientCardsContainer">
+                  {clientList.map((client) => (
+                    <ClientCard key={client._id} client={client} hidden={hiddenClientIds.includes(client._id)}
+                      onView={handleView} onEdit={handleEdit} onDelete={handleDeactivate} />
+                  ))}
+                </div>
+              )}
 
               {/* Pagination */}
               <div className="mt-4">
@@ -222,8 +244,12 @@ export default function Client() {
               </div>
             </>
           ) : (
-            /* Loading Spinner */
-            <CardGridSkeleton count={6} label="Loading clients…" />
+            /* Loading placeholder shaped like the current view */
+            view === 'table' ? (
+              <div className="card"><div className="card-body"><TableSkeleton rows={8} columns={6} label="Loading clients…" /></div></div>
+            ) : (
+              <CardGridSkeleton count={6} label="Loading clients…" />
+            )
           )}
 
           <SuccessModal id="clientSuccessModal" />

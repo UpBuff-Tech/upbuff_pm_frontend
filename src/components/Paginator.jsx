@@ -58,16 +58,16 @@ export default function Paginator({ pagination, limit = 10, containerClass = '',
       {hasPages ? (
         <ul className={paginationClass}>
           <li className={(current === 1 ? 'disabled ' : '') + itemClass}>
-            <a href="#" className="page-link previous-page" title="Previous page" onClick={(e) => goTo(e, current - 1)}> &lt; </a>
+            <a href="#" className="page-link previous-page" title="Previous page" aria-label="Previous page" onClick={(e) => goTo(e, current - 1)}><i className="bx bx-chevron-left"></i></a>
           </li>
 
           {previousHidden && (
             <>
               <li className={itemClass}>
-                <a href="#" className="page-link" title="Go to page 1" onClick={(e) => goTo(e, 1)}> 1 </a>
+                <a href="#" className="page-link" title="Go to page 1" onClick={(e) => goTo(e, 1)}>1</a>
               </li>
               <li className={itemClass}>
-                <a href="#" className="page-link show-prev" title="Show previous pages" onClick={showPrevious}> ... </a>
+                <a href="#" className="page-link show-prev" title="Show previous pages" onClick={showPrevious}>…</a>
               </li>
             </>
           )}
@@ -81,16 +81,16 @@ export default function Paginator({ pagination, limit = 10, containerClass = '',
           {nextHidden && (
             <>
               <li className={itemClass}>
-                <a href="#" className="page-link show-next" title="Show next pages" onClick={showNext}> ... </a>
+                <a href="#" className="page-link show-next" title="Show next pages" onClick={showNext}>…</a>
               </li>
               <li className={itemClass}>
-                <a href="#" className="page-link" title={'Go to page ' + pageCount} onClick={(e) => goTo(e, pageCount)}> {pageCount} </a>
+                <a href="#" className="page-link" title={'Go to page ' + pageCount} onClick={(e) => goTo(e, pageCount)}>{pageCount}</a>
               </li>
             </>
           )}
 
           <li className={(current === pageCount ? 'disabled ' : '') + itemClass}>
-            <a href="#" className="page-link next-page" title="Next page" onClick={(e) => goTo(e, current + 1)}> &gt; </a>
+            <a href="#" className="page-link next-page" title="Next page" aria-label="Next page" onClick={(e) => goTo(e, current + 1)}><i className="bx bx-chevron-right"></i></a>
           </li>
         </ul>
       ) : null}

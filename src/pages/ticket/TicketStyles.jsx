@@ -8,18 +8,6 @@ const TICKET_STYLES = `
       display: flex; align-items: flex-end; justify-content: space-between;
       flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;
     }
-    .tk-view-toggle {
-      display: inline-flex; padding: 3px; gap: 2px;
-      border: 1px solid var(--fx-border); border-radius: 10px; background: var(--fx-surface);
-    }
-    .tk-view-toggle button {
-      display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px;
-      border: 0; border-radius: 7px; background: transparent;
-      color: var(--fx-text-muted); font-size: 0.8125rem; font-weight: 500; cursor: pointer;
-    }
-    .tk-view-toggle button i { font-size: 1.05rem; }
-    .tk-view-toggle button:hover { color: var(--fx-text); }
-    .tk-view-toggle button.active { background: var(--fx-primary-soft); color: var(--fx-primary); }
 
     /* ---- Status overview ---- */
     .tk-overview { margin-bottom: 1rem; overflow: hidden; }
@@ -166,29 +154,45 @@ const TICKET_STYLES = `
     .tk-icon-btn:hover { border-color: var(--fx-border); background: #fff; color: var(--fx-text); }
 
     /* ---- Cards ---- */
-    .tk-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+    .tk-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .tk-card {
-      position: relative; display: flex; flex-direction: column; gap: 8px;
-      padding: 14px; border: 1px solid var(--fx-border); border-radius: 14px;
-      background: #fff; box-shadow: var(--fx-shadow-xs); cursor: pointer;
+      position: relative; display: flex; flex-direction: column; gap: 10px;
+      padding: 18px 18px 14px; border: 1px solid var(--fx-border); border-radius: 14px;
+      background: #fff; box-shadow: var(--fx-shadow-xs); cursor: pointer; overflow: hidden;
       transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
     }
+    /* Status colour as a strip along the top edge */
     .tk-card::before {
-      content: ''; position: absolute; left: -1px; top: 14px; height: 22px; width: 3px;
-      border-radius: 0 3px 3px 0; background: var(--st, #64748b);
+      content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      background: var(--st, #64748b);
     }
     .tk-card:hover, .tk-card:focus-visible {
       outline: none; border-color: #d5dbe4; transform: translateY(-2px);
-      box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.25);
+      box-shadow: 0 12px 28px -14px rgba(15, 23, 42, 0.28);
     }
-    .tk-card.card-closed { opacity: 0.7; background: var(--fx-surface-alt); }
+    .tk-card.card-closed { background: var(--fx-surface-alt); }
+    .tk-card.card-closed .tk-card-subject { color: var(--fx-text-muted); }
     .tk-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .tk-card-id {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.02em;
+      color: var(--fx-text-muted); text-decoration: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .tk-card-id:hover { color: var(--fx-primary); text-decoration: underline; }
+    .tk-card-age { display: inline-flex; align-items: center; gap: 3px; font-size: 0.75rem; color: var(--fx-text-muted); white-space: nowrap; }
     .tk-card-subject {
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-      font-size: 0.9375rem; font-weight: 600; line-height: 1.35; color: var(--fx-text);
+      min-height: calc(2 * 1.4em);
+      font-size: 0.9375rem; font-weight: 600; line-height: 1.4; color: var(--fx-text);
     }
-    .tk-card-client { display: flex; align-items: center; gap: 4px; margin-top: -4px; font-size: 0.75rem; color: var(--fx-text-muted); }
-    .tk-card-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+    .tk-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+    .tk-card-client {
+      display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+      font-size: 0.8125rem; color: var(--fx-text-body);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .tk-card-client i { color: var(--fx-text-subtle); flex-shrink: 0; }
+    .tk-card-tags { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .tk-card-progress { display: flex; align-items: center; gap: 8px; }
     .tk-progress-track { flex: 1; height: 6px; border-radius: 999px; background: var(--fx-surface-hover); overflow: hidden; }
     .tk-progress-track span { display: block; height: 100%; border-radius: inherit; background: #0891b2; }
@@ -198,9 +202,9 @@ const TICKET_STYLES = `
     .tk-card-progress.is-over .tk-progress-label { color: #b91c1c; }
     .tk-card-footer {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      margin-top: auto; padding-top: 10px; border-top: 1px solid #f1f5f9; font-size: 0.75rem;
+      margin-top: auto; padding-top: 12px; border-top: 1px solid #f1f5f9; font-size: 0.75rem;
     }
-    .tk-card-footer .tk-created { display: inline-flex; align-items: center; gap: 3px; }
+    .tk-card-state { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 
     /* ---- Pagination ---- */
     .tk-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }

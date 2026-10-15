@@ -9,6 +9,10 @@ import { currentUserId } from '../../lib/customFunctions';
 import ClientDashboardProjects, { NoProjects } from './ClientDashboardProjects';
 import { formatDate, badgeClass } from './utility';
 import { StatCardsSkeleton, ListSkeleton } from '../../components/skeleton/Skeleton';
+import PeriodFilter from '../../components/PeriodFilter';
+import { periodInfo, periodPayload, savedPeriod, savePeriod } from '../../lib/dashboardPeriod';
+
+const PERIOD_STORAGE_KEY = 'clientDashboard.period';
 
 const ICON_SIZE = { fontSize: '1.5rem' };
 
@@ -60,6 +64,36 @@ function StatCard({ label, value, color, icon }) {
   );
 }
 
+/** One period number (hours, tasks completed, tickets raised) with its change vs the previous period. */
+function ActivityCard({ label, value, previous, prevLabel, icon, color, loading }) {
+  let change = null;
+  if (!loading && previous) {
+    const percent = Math.round(((value - previous) / previous) * 100);
+    change = (
+      <small className={percent >= 0 ? 'text-success' : 'text-danger'}>
+        <i className={'bx ' + (percent >= 0 ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt')}></i>{Math.abs(percent)}% vs {prevLabel}
+      </small>
+    );
+  }
+  return (
+    <div className="col-md-4">
+      <div className="card h-100">
+        <div className="card-body d-flex align-items-center gap-3">
+          <span className="avatar-initial rounded d-inline-flex align-items-center justify-content-center"
+            style={{ backgroundColor: color, width: 42, height: 42, flexShrink: 0 }}>
+            <i className={icon} style={ICON_SIZE}></i>
+          </span>
+          <div>
+            <span className="text-muted d-block small">{label}</span>
+            <h4 className="mb-0">{loading ? '–' : value.toLocaleString()}</h4>
+            {change}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientDashboard() {
   const [isReady, setIsReady] = useState(false);
   // The client's id; the project list is loaded once it is known
@@ -70,6 +104,26 @@ export default function ClientDashboard() {
   // Upcoming tasks
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
+
+  // Activity in the chosen period (hours on their projects, tasks completed, tickets raised)
+  const [periodKey, setPeriodKey] = useState(() => savedPeriod(PERIOD_STORAGE_KEY));
+  const [activity, setActivity] = useState(null);
+  const period = periodInfo(periodKey);
+
+  useEffect(() => {
+    setActivity(null);
+    api.call('project.getClientActivity', periodPayload(periodKey), (err, data) => {
+      if (!currentUserId()) return;
+      setActivity(!err && data ? data : { totals: {}, previous: null });
+    });
+  }, [periodKey]);
+
+  const changePeriod = (key) => {
+    setPeriodKey(key);
+    savePeriod(PERIOD_STORAGE_KEY, key);
+  };
+  const activityTotals = (activity && activity.totals) || {};
+  const activityPrevious = (activity && activity.previous) || {};
 
   useEffect(() => {
     // Fetch client dashboard stats
@@ -125,11 +179,12 @@ export default function ClientDashboard() {
     <div className="container-xxl flex-grow-1 container-p-y">
 
       {/* Header */}
-      <div className="row mb-4">
-        <div className="col-12">
+      <div className="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+        <div>
           <h4 className="fw-bold">Client Dashboard</h4>
-          <p className="text-muted">Welcome, {clientDisplayName || 'Client'}! View your project status and progress</p>
+          <p className="text-muted mb-0">Welcome, {clientDisplayName || 'Client'}! View your project status and progress</p>
         </div>
+        <PeriodFilter value={periodKey} onChange={changePeriod} />
       </div>
 
       {isReady ? (
@@ -140,6 +195,17 @@ export default function ClientDashboard() {
             <StatCard label="In Progress" value={clientStats.inProgressProjects || 0} color="#03c3ec20" icon="bx bx-play-circle text-info" />
             <StatCard label="Completed" value={clientStats.completedProjects || 0} color="#71dd3720" icon="bx bx-check-circle text-success" />
             <StatCard label="On Hold" value={clientStats.onHoldProjects || 0} color="#ffab0020" icon="bx bx-pause-circle text-warning" />
+          </div>
+
+          {/* Activity in the chosen period */}
+          <h6 className="text-muted text-uppercase small fw-semibold mb-2">Activity · {period.label.toLowerCase()}</h6>
+          <div className="row g-3 mb-4">
+            <ActivityCard label="Hours worked on your projects" value={activityTotals.hours || 0} previous={activityPrevious.hours}
+              prevLabel={period.prevLabel} icon="bx bx-time-five text-primary" color="#696cff20" loading={activity === null} />
+            <ActivityCard label="Tasks completed" value={activityTotals.completedTasks || 0} previous={activityPrevious.completedTasks}
+              prevLabel={period.prevLabel} icon="bx bx-check-circle text-success" color="#71dd3720" loading={activity === null} />
+            <ActivityCard label="Tickets raised" value={activityTotals.ticketsRaised || 0} previous={activityPrevious.ticketsRaised}
+              prevLabel={period.prevLabel} icon="bx bx-support text-info" color="#03c3ec20" loading={activity === null} />
           </div>
 
           {/* Upcoming Tasks This Week */}

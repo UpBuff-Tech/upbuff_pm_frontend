@@ -114,35 +114,6 @@
   color: var(--fx-text-muted);
 }
 
-.pj-view-toggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--fx-border);
-  border-radius: 10px;
-  background: var(--fx-surface-alt);
-}
-
-.pj-view-toggle button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 30px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--fx-text-muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.pj-view-toggle button.active {
-  background: #fff;
-  color: var(--fx-primary);
-  box-shadow: var(--fx-shadow-xs);
-}
-
 /* ---- Shared bits ---- */
 .pj-avatar {
   display: inline-flex;

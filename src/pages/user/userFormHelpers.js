@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import moment from 'moment';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 export const EMAIL_REG = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
 /** An empty password is accepted (used while typing and for the optional password of the edit form). */
@@ -289,7 +290,7 @@ export function useRoleSelect2(selectRef, parentSelector, value, setValue, roles
     select.on('change', onChange);
     return () => {
       select.off('change', onChange);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, []);
 

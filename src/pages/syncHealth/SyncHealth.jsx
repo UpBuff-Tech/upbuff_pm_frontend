@@ -8,6 +8,7 @@ import { usePagination } from '../../hooks/usePagination';
 import Paginator from '../../components/Paginator';
 import { initializeSelect2 } from '../../lib/customFunctions';
 import { TableSkeleton } from '../../components/skeleton/Skeleton';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 const PER_PAGE = 20;
 
@@ -124,7 +125,7 @@ export default function SyncHealth() {
     select.on('change', onChange);
     return () => {
       select.off('change', onChange);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, []);
 

@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import './task.css';
-import api from '../../api/client';
+import api, { onDataChanged } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { Session } from '../../lib/session';
 import { currentUserId } from '../../lib/customFunctions';
@@ -272,6 +272,9 @@ export default function Task() {
     }, 1000);
     refreshTodayHours();
     const todayHoursInterval = setInterval(() => refreshTodayHours(), 30000);
+    // After any data-changing call - e.g. a punch-out, which stops the running timers on the
+    // server - re-read the hours at once so the banner stops counting.
+    const stopListeningForChanges = onDataChanged(refreshTodayHours);
 
     const visibilityHandler = () => {
       if (document.visibilityState !== 'visible' || !isActiveRef.current) return;
@@ -301,6 +304,7 @@ export default function Task() {
       $(document).off('click.taskUpdatedDismiss');
       clearInterval(tickInterval);
       clearInterval(todayHoursInterval);
+      stopListeningForChanges();
       document.removeEventListener('visibilitychange', visibilityHandler);
     };
 

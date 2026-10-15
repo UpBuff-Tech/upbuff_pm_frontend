@@ -1,5 +1,5 @@
 // The table view of the user list (#tableView): one row per user.
-// Same props as UserCardView; `visible` is true after the "Table" button was clicked.
+// Same props as UserCardView; `visible` is true while the table view is shown (the default).
 
 import { activeHelper, formatDate, getUserRole } from './userListHelpers';
 

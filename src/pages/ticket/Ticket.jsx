@@ -54,7 +54,7 @@ export default function Ticket() {
   const listQuery = useRef({ page: 1, filters: EMPTY_FILTERS });
 
   // View mode (table or card)
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('table'); // the table opens first; Cards switches
 
   // Projects (for task creation)
   const [projects, setProjects] = useState([]);
@@ -324,7 +324,7 @@ export default function Ticket() {
             <p className="text-muted mb-0">Track and resolve client support and service requests</p>
           </div>
           <div className="d-flex gap-2 align-items-center">
-            <div className="tk-view-toggle" role="group" aria-label="View">
+            <div className="fx-view-toggle" role="group" aria-label="View">
               <button type="button" className={isTableView ? 'active' : ''} id="viewTable" title="Table view"
                 aria-pressed={isTableView} onClick={() => setViewMode('table')}>
                 <i className="bx bx-list-ul"></i>Table

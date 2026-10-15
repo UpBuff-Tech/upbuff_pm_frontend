@@ -6,6 +6,7 @@ import moment from 'moment';
 import api from '../../api/client';
 import { initializeSelect2 } from '../../lib/customFunctions';
 import { TableSkeleton } from '../../components/skeleton/Skeleton';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 function truncate(text, length) {
   if (!text) return '-';
@@ -58,7 +59,7 @@ export default function Suggestions() {
     select.on('change', onChange);
     return () => {
       select.off('change', onChange);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, []);
 

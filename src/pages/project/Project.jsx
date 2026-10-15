@@ -265,7 +265,7 @@ export default function Project() {
                 {pagination.totalItems() || 0} project{pagination.totalItems() === 1 ? '' : 's'}{searchText ? ' found' : ''}
               </span>
             )}
-            <div className="pj-view-toggle" role="group" aria-label="View">
+            <div className="fx-view-toggle is-icons" role="group" aria-label="View">
               <button type="button" className={view === 'grid' ? 'active' : ''} aria-pressed={view === 'grid'} onClick={() => changeView('grid')} title="Grid view">
                 <i className="bx bx-grid-alt"></i>
               </button>

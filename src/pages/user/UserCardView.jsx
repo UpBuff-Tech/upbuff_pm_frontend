@@ -1,6 +1,6 @@
 // The card view of the user list (#cardView): one card per user.
 //   users       - the users to show
-//   visible     - false while the table view is shown
+//   visible     - true after the "Card" button was clicked (the table is the default view)
 //   rolesList   - the roles, to show the role name
 //   userCan     - permission check
 //   onView, onEdit, onDeactivate, onActivate, onRemove - (event, user) handlers of the buttons

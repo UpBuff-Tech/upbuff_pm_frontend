@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import moment from 'moment';
 import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import api from '../../api/client';
+import api, { onDataChanged } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import './userDashboard.css';
 
@@ -83,13 +83,20 @@ export default function UserDashboard() {
     loadSummary();
     loadCalendar();
 
-    api.call('attendance.getTodayStatus', (err, data) => {
-      setToday(!err && data ? data : { status: null, record: null });
-    });
-    api.call('projectTasks.getMyTodayHours', null, null, (err, data) => {
-      if (!err && data) setTaskHours({ totalSeconds: data.totalSeconds || 0, isRunning: !!data.isRunning, anchorMs: Date.now() });
-      else setTaskHours({ totalSeconds: 0, isRunning: false, anchorMs: Date.now() });
-    });
+    // Today's attendance + task hours. Reloaded after every data-changing call too: a punch-out
+    // (the fingerprint button) stops the running timers on the server, so the hours must stop
+    // counting and the attendance card must show the new state without a page reload.
+    const loadToday = () => {
+      api.call('attendance.getTodayStatus', (err, data) => {
+        setToday(!err && data ? data : { status: null, record: null });
+      });
+      api.call('projectTasks.getMyTodayHours', null, null, (err, data) => {
+        if (!err && data) setTaskHours({ totalSeconds: data.totalSeconds || 0, isRunning: !!data.isRunning, anchorMs: Date.now() });
+        else setTaskHours({ totalSeconds: 0, isRunning: false, anchorMs: Date.now() });
+      });
+    };
+    loadToday();
+    const stopListening = onDataChanged(loadToday);
 
     // This year's approved and pending leave for the calendar
     const yearStart = new Date(year, 0, 1);
@@ -110,7 +117,10 @@ export default function UserDashboard() {
 
     // Live clocks
     const timer = setInterval(() => setTick((t) => t + 1), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      stopListening();
+    };
   }, [userId]);
 
   /* ---- Derived ---- */

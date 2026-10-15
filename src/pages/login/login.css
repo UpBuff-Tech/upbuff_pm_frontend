@@ -663,21 +663,18 @@ body.login-page .login_footer {
 /* Large screens: the layout is designed for a ~1370px-wide viewport (a laptop at 125% zoom).
    Wider viewports (100% / 110% zoom on a large display) scale the content up so the page
    does not look small and empty. `zoom` scales layout too (unlike transform), so the
-   columns keep their spacing. The full-height containers themselves are not zoomed. */
+   columns keep their spacing. The full-height containers themselves are not zoomed.
+   The steps are kept gentle: larger values made the form look oversized on laptops. */
 @media (min-width: 1500px) {
-  .login-container { --login-scale: 1.1; }
-}
-
-@media (min-width: 1650px) {
-  .login-container { --login-scale: 1.2; }
+  .login-container { --login-scale: 1; }
 }
 
 @media (min-width: 1800px) {
-  .login-container { --login-scale: 1.3; }
+  .login-container { --login-scale: 1.05; }
 }
 
 @media (min-width: 2100px) {
-  .login-container { --login-scale: 1.45; }
+  .login-container { --login-scale: 1.15; }
 }
 
 @media (min-width: 1500px) {

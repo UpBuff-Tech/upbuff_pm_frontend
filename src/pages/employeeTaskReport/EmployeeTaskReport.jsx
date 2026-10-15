@@ -10,6 +10,7 @@ import { toFileNameSlug, formatDateRangeLabel } from '../../lib/tableExport';
 import { ReportLoading } from './ReportStates';
 import { hasReportTasks, getReportRangeLabel, formatDate } from './utility';
 import './employeeTaskReport.css';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 // Mirrors the on-screen report table, totals row included.
 const EXPORT_COLUMNS = [
@@ -279,7 +280,7 @@ export default function EmployeeTaskReport() {
     $('#statusFilter').select2({ placeholder: 'All Statuses', allowClear: true, width: '100%', minimumResultsForSearch: Infinity });
 
     return () => {
-      $('#employeeSelect, #projectSelect, #statusFilter').select2('destroy');
+      destroySelect2('#employeeSelect, #projectSelect, #statusFilter');
     };
   }, []);
 

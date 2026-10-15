@@ -4,6 +4,12 @@ import api from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { CHART_COLORS, renderChart, donutChartOptions, sparklineOptions } from './charts';
 import { ChartCard, Delta, KpiCard } from './widgets';
+import ProjectAssignments from './ProjectAssignments';
+import PeriodFilter from '../../components/PeriodFilter';
+import { bucketLabel, bucketTitle, periodInfo, periodPayload, savedPeriod, savePeriod } from '../../lib/dashboardPeriod';
+
+const PERIOD_STORAGE_KEY = 'adminDashboard.period';
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const PROJECT_STATUSES = ['Not Started', 'In Progress', 'Completed', 'On Hold'];
 const PROJECT_STATUS_COLORS = [CHART_COLORS.amber, CHART_COLORS.primary, CHART_COLORS.green, CHART_COLORS.slate];
@@ -13,15 +19,6 @@ const TASK_STATUS_COLORS = [CHART_COLORS.amber, CHART_COLORS.primary, CHART_COLO
 const PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
 
 const sum = (values) => values.reduce((total, value) => total + (Number(value) || 0), 0);
-
-/** Daily hours folded into 7-day totals (oldest first), for a smooth KPI sparkline. */
-function weeklyHours(days) {
-  const totals = [];
-  for (let end = days.length; end > 0; end -= 7) {
-    totals.unshift(Math.round(sum(days.slice(Math.max(0, end - 7), end).map((d) => d.hours))));
-  }
-  return totals;
-}
 
 function formatHours(hours) {
   if (hours >= 1000) return (hours / 1000).toFixed(1) + 'k';
@@ -41,14 +38,6 @@ function greeting() {
   return 'Good evening';
 }
 
-/** "12h 30m"-style text (from the assignments API) as hours. */
-function durationToHours(text) {
-  if (!text) return 0;
-  const parts = String(text).split(':').map(Number);
-  if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) return parts[0] + parts[1] / 60 + parts[2] / 3600;
-  return 0;
-}
-
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
@@ -60,19 +49,47 @@ export default function AdminDashboard() {
   const [taskStats, setTaskStats] = useState(null);
   const [employeeHoursData, setEmployeeHoursData] = useState(null);
   const [projectAssignmentsData, setProjectAssignmentsData] = useState(null);
-  const [trends, setTrends] = useState(null);
-  const [updatedAt, setUpdatedAt] = useState(null);
+  const [trends, setTrends] = useState(null);       // only its open-tasks-by-priority part (current state)
+  const [activity, setActivity] = useState(null);   // projectTasks.getPeriodActivity for the chosen period
+  const [periodKey, setPeriodKey] = useState(() => savedPeriod(PERIOD_STORAGE_KEY));
   const [refreshing, setRefreshing] = useState(false);
+  const period = periodInfo(periodKey);
+
+  /** The numbers that depend on the chosen period: activity, top contributors, team assignments. */
+  const loadPeriodData = (key, done = () => {}) => {
+    const payload = periodPayload(key);
+    api.call('projectTasks.getPeriodActivity', payload, (err, data) => {
+      if (err) console.error('Error fetching period activity:', err);
+      setActivity(!err && data ? data : { totals: {}, previous: null, series: [], weekdayHours: [] });
+      done();
+    });
+    api.call('projectTasks.getEmployeeHours', payload, (err, data) => {
+      setEmployeeHoursData(!err && data ? data : []);
+      done();
+    });
+    api.call('projectTasks.getProjectAssignments', payload, (error, result) => {
+      if (error) console.error('Error fetching project assignments:', error);
+      setProjectAssignmentsData(error ? [] : (result || []));
+      done();
+    });
+  };
+
+  const changePeriod = (key) => {
+    if (key === periodKey) return;
+    setPeriodKey(key);
+    savePeriod(PERIOD_STORAGE_KEY, key);
+    setActivity(null);
+    setEmployeeHoursData(null);
+    setProjectAssignmentsData(null);
+    loadPeriodData(key);
+  };
 
   const loadAll = () => {
     setRefreshing(true);
-    let pending = 5;
+    let pending = 6;
     const done = () => {
       pending -= 1;
-      if (pending === 0) {
-        setRefreshing(false);
-        setUpdatedAt(new Date());
-      }
+      if (pending === 0) setRefreshing(false);
     };
 
     api.call('project.getDashboardStats', (err, stats) => {
@@ -83,20 +100,12 @@ export default function AdminDashboard() {
       if (!err && stats) setTaskStats(stats);
       done();
     });
-    api.call('projectTasks.getEmployeeHours', (err, data) => {
-      setEmployeeHoursData(!err && data ? data : []);
-      done();
-    });
     api.call('projectTasks.getDashboardTrends', (err, data) => {
       if (err) console.error('Error fetching dashboard trends:', err);
       setTrends(!err && data ? data : { weekly: [], daily: [], priority: {} });
       done();
     });
-    api.call('projectTasks.getProjectAssignments', (error, result) => {
-      if (error) console.error('Error fetching project assignments:', error);
-      setProjectAssignmentsData(error ? [] : (result || []));
-      done();
-    });
+    loadPeriodData(periodKey, done);
   };
 
   useEffect(() => {
@@ -105,14 +114,11 @@ export default function AdminDashboard() {
   }, [userId]);
 
   /* ---- Derived numbers ---- */
-  const weekly = (trends && trends.weekly) || [];
-  const daily = (trends && trends.daily) || [];
-  const last30 = daily.slice(-30);
-  const prev30 = daily.slice(-60, -30);
-  const hours30 = sum(last30.map((d) => d.hours));
-  const hoursPrev30 = sum(prev30.map((d) => d.hours));
-  const thisWeek = weekly[weekly.length - 1] || { created: 0, completed: 0 };
-  const lastWeek = weekly[weekly.length - 2] || { created: 0, completed: 0 };
+  const series = (activity && activity.series) || [];
+  const totals = (activity && activity.totals) || {};
+  const previous = (activity && activity.previous) || null;
+  const weekdayHours = (activity && activity.weekdayHours) || [];
+  const vsPrevious = 'vs ' + period.prevLabel;
 
   const ps = projectStats || {};
   const ts = taskStats || {};
@@ -121,37 +127,43 @@ export default function AdminDashboard() {
   const totalTasks = ts.totalTasks || 0;
   const completedTasks = ts.completedTasks || 0;
   const completionRate = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const onTimeRate = totalProjects ? Math.round(((totalProjects - delayedProjects) / totalProjects) * 100) : 0;
 
   const trendsLoading = trends === null;
+  const activityLoading = activity === null;
   const statsLoading = projectStats === null || taskStats === null;
-  const hasDailyHours = daily.some((d) => d.hours > 0);
-  const hasThroughput = weekly.some((w) => w.created || w.completed);
+  const hasHours = series.some((b) => b.hours > 0);
+  const hasThroughput = series.some((b) => b.created || b.completed);
   const priority = (trends && trends.priority) || {};
   const hasPriority = PRIORITIES.some((p) => priority[p]);
 
   /* ---- Charts ---- */
 
-  // KPI sparklines + trend charts (need the trends call)
+  // KPI sparklines + the period's charts
   useEffect(() => {
-    if (!trends) return undefined;
+    if (!activity) return undefined;
+    const bucket = period.bucket;
     const charts = [
-      renderChart('#kpiHoursSpark', sparklineOptions(weeklyHours(daily), CHART_COLORS.primary, 'Hours')),
-      renderChart('#kpiCompletedSpark', sparklineOptions(weekly.map((w) => w.completed), CHART_COLORS.green, 'Completed')),
-      renderChart('#kpiCreatedSpark', sparklineOptions(weekly.map((w) => w.created), CHART_COLORS.cyan, 'Created')),
-      hasThroughput && renderThroughputChart(weekly),
-      hasDailyHours && renderDailyHoursChart(last30),
-      hasDailyHours && renderHeatmapChart(daily),
-      hasPriority && renderPriorityChart(priority),
+      series.length > 1 && renderChart('#kpiHoursSpark', sparklineOptions(series.map((b) => b.hours), CHART_COLORS.primary, 'Hours')),
+      series.length > 1 && renderChart('#kpiCompletedSpark', sparklineOptions(series.map((b) => b.completed), CHART_COLORS.green, 'Completed')),
+      series.length > 1 && renderChart('#kpiCreatedSpark', sparklineOptions(series.map((b) => b.created), CHART_COLORS.cyan, 'Created')),
+      hasThroughput && renderThroughputChart(series, bucket),
+      hasHours && renderHoursChart(series, bucket),
+      hasHours && renderWeekdayChart(weekdayHours),
     ];
     return () => charts.forEach((chart) => chart && chart.destroy());
+  }, [activity]);
+
+  // Open tasks by priority (current state)
+  useEffect(() => {
+    if (!trends || !hasPriority) return undefined;
+    const chart = renderPriorityChart(priority);
+    return () => chart && chart.destroy();
   }, [trends]);
 
   // Charts from the project/task stats
   useEffect(() => {
     if (statsLoading) return undefined;
     const charts = [
-      renderHealthChart(completionRate, onTimeRate),
       renderDonut('#projectStatusChart', ps.statusDistribution, PROJECT_STATUSES, PROJECT_STATUS_COLORS, 'Projects'),
       renderDonut('#taskStatusChart', ts.statusDistribution, TASK_STATUSES, TASK_STATUS_COLORS, 'Tasks'),
       (ps.recentProjects || []).length > 0 && renderProjectTimelineChart(ps.recentProjects),
@@ -166,7 +178,6 @@ export default function AdminDashboard() {
   }, [employeeHoursData]);
 
   const firstName = (user && user.profile && user.profile.firstName) || '';
-  const assignments = projectAssignmentsData || [];
 
   return (
     <div className="container-xxl flex-grow-1 container-p-y fx-dashboard">
@@ -178,7 +189,7 @@ export default function AdminDashboard() {
           <p className="text-muted mb-0">Here's how your projects and team are doing — {moment().format('dddd, D MMMM')}</p>
         </div>
         <div className="fx-dash-actions">
-          {updatedAt && <span className="fx-updated">Updated {moment(updatedAt).format('h:mm A')}</span>}
+          <PeriodFilter value={periodKey} onChange={changePeriod} />
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={loadAll} disabled={refreshing}>
             <i className={'bx bx-refresh me-1' + (refreshing ? ' bx-spin' : '')}></i>Refresh
           </button>
@@ -187,17 +198,17 @@ export default function AdminDashboard() {
 
       {/* KPI tiles */}
       <div className="row g-3 mb-3">
-        <KpiCard id="kpiHoursSpark" icon="bx-time-five" tone="primary" label="Hours logged · 30 days"
-          value={formatHours(hours30)} unit="h" loading={trendsLoading}>
-          <Delta value={changePercent(hours30, hoursPrev30)} suffix="vs previous 30 days" />
+        <KpiCard id="kpiHoursSpark" icon="bx-time-five" tone="primary" label={'Hours logged · ' + period.label.toLowerCase()}
+          value={formatHours(totals.hours || 0)} unit="h" loading={activityLoading}>
+          <Delta value={previous && changePercent(totals.hours || 0, previous.hours)} suffix={vsPrevious} />
         </KpiCard>
-        <KpiCard id="kpiCompletedSpark" icon="bx-check-circle" tone="green" label="Tasks completed · this week"
-          value={thisWeek.completed} loading={trendsLoading}>
-          <Delta value={changePercent(thisWeek.completed, lastWeek.completed)} suffix="vs last week" />
+        <KpiCard id="kpiCompletedSpark" icon="bx-check-circle" tone="green" label={'Tasks completed · ' + period.label.toLowerCase()}
+          value={totals.completed || 0} loading={activityLoading}>
+          <Delta value={previous && changePercent(totals.completed || 0, previous.completed)} suffix={vsPrevious} />
         </KpiCard>
-        <KpiCard id="kpiCreatedSpark" icon="bx-plus-circle" tone="cyan" label="New tasks · this week"
-          value={thisWeek.created} loading={trendsLoading}>
-          <Delta value={changePercent(thisWeek.created, lastWeek.created)} suffix="vs last week" />
+        <KpiCard id="kpiCreatedSpark" icon="bx-plus-circle" tone="cyan" label={'New tasks · ' + period.label.toLowerCase()}
+          value={totals.created || 0} loading={activityLoading}>
+          <Delta value={previous && changePercent(totals.created || 0, previous.created)} suffix={vsPrevious} />
         </KpiCard>
         <KpiCard icon="bx-error-circle" tone="red" label="Delayed projects" value={delayedProjects} loading={statsLoading}>
           <div className="fx-kpi-meter">
@@ -229,122 +240,73 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Throughput + health */}
+      {/* Throughput + overdue projects */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-xl-8" title="Task throughput" subtitle="Tasks created vs completed per week · last 12 weeks"
-          chartId="throughputChart" height={300} loading={trendsLoading} empty={!hasThroughput && 'No task activity in the last 12 weeks'} />
-        <ChartCard className="col-xl-4" title="Delivery health" subtitle="Share of tasks done and projects on schedule"
-          chartId="healthChart" height={300} loading={statsLoading} />
+        <ChartCard className="col-xl-8" title="Task throughput" subtitle={'Tasks created vs completed per ' + period.bucket + ' · ' + period.label.toLowerCase()}
+          chartId="throughputChart" height={300} loading={activityLoading} empty={!hasThroughput && 'No task activity ' + period.label.toLowerCase()} />
+        <ChartCard className="col-xl-4" title="Overdue projects"
+          subtitle={delayedProjects ? `Past their end date and not completed · ${delayedProjects} in total` : 'Past their end date and not completed'}
+          height={300} loading={statsLoading}
+          empty={projectStats && (ps.overdueProjects || []).length === 0 && 'No overdue projects - everything is on schedule'}>
+          {!statsLoading && <OverdueProjectList projects={ps.overdueProjects || []} />}
+        </ChartCard>
       </div>
 
       {/* Hours + priority */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-xl-8" title="Hours logged per day" subtitle="All team members · last 30 days"
-          chartId="dailyHoursChart" height={280} loading={trendsLoading} empty={!hasDailyHours && 'No time logged in the last 30 days'} />
-        <ChartCard className="col-xl-4" title="Open tasks by priority" subtitle="Tasks not yet completed"
+        <ChartCard className="col-xl-8" title={'Hours logged per ' + period.bucket} subtitle={'All team members · ' + period.label.toLowerCase()}
+          chartId="dailyHoursChart" height={280} loading={activityLoading} empty={!hasHours && 'No time logged ' + period.label.toLowerCase()} />
+        <ChartCard className="col-xl-4" title="Open tasks by priority" subtitle="Tasks not yet completed · right now"
           chartId="priorityChart" height={280} loading={trendsLoading} empty={!hasPriority && 'No open tasks with a priority'} />
       </div>
 
       {/* Status + people */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-md-6 col-xl-4" title="Project status" chartId="projectStatusChart" height={300} loading={statsLoading} />
-        <ChartCard className="col-md-6 col-xl-4" title="Task status" chartId="taskStatusChart" height={300} loading={statsLoading} />
-        <ChartCard className="col-xl-4" title="Top contributors" subtitle="Total hours logged on tasks"
+        <ChartCard className="col-md-6 col-xl-4" title="Project status" subtitle="All projects · right now" chartId="projectStatusChart" height={300} loading={statsLoading} />
+        <ChartCard className="col-md-6 col-xl-4" title="Task status" subtitle="All tasks · right now" chartId="taskStatusChart" height={300} loading={statsLoading} />
+        <ChartCard className="col-xl-4" title="Top contributors" subtitle={'Hours logged on tasks · ' + period.label.toLowerCase()}
           chartId="employeeHoursChart" height={300} loading={employeeHoursData === null}
-          empty={employeeHoursData && employeeHoursData.length === 0 && 'No hours logged yet'} />
+          empty={employeeHoursData && employeeHoursData.length === 0 && 'No hours logged ' + period.label.toLowerCase()} />
       </div>
 
       {/* Activity + timeline */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-xl-7" title="Work activity" subtitle="Hours logged by weekday · last 12 weeks"
-          chartId="activityHeatmap" height={280} loading={trendsLoading} empty={!hasDailyHours && 'No time logged yet'} />
+        <ChartCard className="col-xl-7" title="Work activity" subtitle={'Hours logged by weekday · ' + period.label.toLowerCase()}
+          chartId="activityHeatmap" height={280} loading={activityLoading} empty={!hasHours && 'No time logged ' + period.label.toLowerCase()} />
         <ChartCard className="col-xl-5" title="Project timelines" subtitle="Planned vs elapsed days · 10 most recent projects"
           chartId="projectTimelineChart" height={280} loading={statsLoading}
           empty={projectStats && (ps.recentProjects || []).length === 0 && 'No projects yet'} />
       </div>
 
       {/* Project Team Assignments */}
-      <div className="card fx-chart-card">
-        <div className="card-header">
-          <div>
-            <h5 className="card-title">Project team assignments</h5>
-            <p className="fx-card-subtitle">Who is working on which project</p>
-          </div>
-          {assignments.length > 0 && <span className="badge bg-label-secondary">{assignments.length} projects</span>}
-        </div>
-        {projectAssignmentsData === null ? (
-          <div className="card-body">
-            {[0, 1, 2].map((i) => <div key={i} className="fx-skeleton fx-skeleton-row"></div>)}
-          </div>
-        ) : assignments.length === 0 ? (
-          <div className="card-body">
-            <div className="fx-chart-empty" style={{ height: 160 }}>
-              <i className="bx bx-group"></i><span>No team assignments yet</span>
-            </div>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-hover fx-assign-table">
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Team members &amp; hours</th>
-                  <th className="text-end">Total hours</th>
-                  <th style={{ width: '220px' }}>Progress</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((assignment, index) => {
-                  const active = Number(assignment.activeTasks) || 0;
-                  const done = Number(assignment.completedTasks) || 0;
-                  const progress = active + done ? Math.round((done / (active + done)) * 100) : 0;
-                  const members = assignment.teamMembers || [];
-                  return (
-                    <tr key={index}>
-                      <td>
-                        <div className="fx-assign-project">
-                          <span className="fx-assign-avatar">{(assignment.projectName || '?').charAt(0).toUpperCase()}</span>
-                          <div>
-                            <div className="fx-assign-name">{assignment.projectName}</div>
-                            <div className="fx-assign-client"><i className="bx bx-buildings"></i>{assignment.clientName}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        {members.length ? (
-                          <div className="fx-member-list">
-                            {members.map((member, memberIndex) => (
-                              <span key={memberIndex} className="fx-member" title={`${member.taskCount} task(s), ${member.timeWorked}`}>
-                                <span className="fx-member-initial">{(member.userName || '?').charAt(0).toUpperCase()}</span>
-                                {member.userName}
-                                <span className="fx-member-time">{member.timeWorked}</span>
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted">No assignments</span>
-                        )}
-                      </td>
-                      <td className="text-end">
-                        <span className="fx-assign-hours">{Math.round(durationToHours(assignment.totalTime)).toLocaleString()}h</span>
-                        <div className="fx-assign-sub">{assignment.totalTime}</div>
-                      </td>
-                      <td>
-                        <div className="fx-progress-row">
-                          <div className="fx-progress"><span style={{ width: progress + '%' }}></span></div>
-                          <span className="fx-progress-value">{progress}%</span>
-                        </div>
-                        <div className="fx-assign-sub">{done} done · {active} active</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <ProjectAssignments assignments={projectAssignmentsData} periodLabel={period.label} />
     </div>
+  );
+}
+
+/** The most overdue projects: name, client, owner and how many days late. */
+function OverdueProjectList({ projects }) {
+  const today = moment().startOf('day');
+  return (
+    <ul className="fx-overdue-list">
+      {projects.map((project) => {
+        const daysLate = today.diff(moment(project.endDate).startOf('day'), 'days');
+        return (
+          <li key={project._id} className="fx-overdue-item">
+            <div className="fx-overdue-main">
+              <div className="fx-overdue-name" title={project.name}>{project.name}</div>
+              <div className="fx-overdue-meta">
+                {[project.clientName, project.assignedToName].filter(Boolean).join(' · ') || project.status || '-'}
+              </div>
+            </div>
+            <div className="fx-overdue-late">
+              <span className={'badge ' + (daysLate > 30 ? 'bg-label-danger' : 'bg-label-warning')}>{daysLate}d late</span>
+              <div className="fx-overdue-due">Due {moment(project.endDate).format('D MMM YYYY')}</div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -352,83 +314,52 @@ export default function AdminDashboard() {
 /* Chart builders                                                      */
 /* ------------------------------------------------------------------ */
 
-function weekLabel(isoDate) {
-  return moment(isoDate).format('D MMM');
-}
-
-/** Created vs completed per week - smooth area chart. */
-function renderThroughputChart(weekly) {
+/** Created vs completed per bucket of the period - smooth area chart. */
+function renderThroughputChart(series, bucket) {
   return renderChart('#throughputChart', {
     series: [
-      { name: 'Created', data: weekly.map((w) => w.created) },
-      { name: 'Completed', data: weekly.map((w) => w.completed) },
+      { name: 'Created', data: series.map((b) => b.created) },
+      { name: 'Completed', data: series.map((b) => b.completed) },
     ],
     chart: { type: 'area', height: 300 },
     colors: [CHART_COLORS.primary, CHART_COLORS.cyan],
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.22, opacityTo: 0.02, stops: [0, 95] } },
-    markers: { size: 0, strokeColors: CHART_COLORS.surface, strokeWidth: 2, hover: { size: 5 } },
+    markers: { size: series.length === 1 ? 5 : 0, strokeColors: CHART_COLORS.surface, strokeWidth: 2, hover: { size: 5 } },
     xaxis: {
-      categories: weekly.map((w) => weekLabel(w.weekStart)),
+      categories: series.map((b) => bucketLabel(b.key, bucket)),
+      tickAmount: Math.min(series.length, 12),
+      labels: { rotate: 0, hideOverlappingLabels: true },
       tooltip: { enabled: false },
       crosshairs: { stroke: { color: '#cbd5e1', width: 1, dashArray: 0 } },
     },
     yaxis: { labels: { formatter: (val) => Math.round(val) }, min: 0, forceNiceScale: true },
     legend: { position: 'top', horizontalAlign: 'left' },
-    tooltip: { shared: true, x: { formatter: (val) => 'Week of ' + val }, y: { formatter: (val) => val + ' tasks' } },
-  });
-}
-
-/** Task completion % and projects on schedule % - two-ring radial gauge. */
-function renderHealthChart(completionRate, onTimeRate) {
-  return renderChart('#healthChart', {
-    series: [completionRate, onTimeRate],
-    labels: ['Tasks completed', 'Projects on schedule'],
-    chart: { type: 'radialBar', height: 300 },
-    colors: [CHART_COLORS.green, CHART_COLORS.primary],
-    plotOptions: {
-      radialBar: {
-        hollow: { size: '42%' },
-        track: { background: '#f1f5f9', margin: 6 },
-        dataLabels: {
-          name: { fontSize: '12px', color: CHART_COLORS.muted, offsetY: 18 },
-          value: { fontSize: '24px', fontWeight: 700, color: CHART_COLORS.text, offsetY: -12, formatter: (val) => Math.round(val) + '%' },
-          total: {
-            show: true,
-            label: 'Tasks completed',
-            color: CHART_COLORS.muted,
-            fontSize: '12px',
-            formatter: () => completionRate + '%',
-          },
-        },
-      },
-    },
-    stroke: { lineCap: 'round' },
-    legend: {
-      show: true,
-      position: 'bottom',
-      formatter: (name, opts) => name + '  <strong style="color:' + CHART_COLORS.text + '">' + opts.w.globals.series[opts.seriesIndex] + '%</strong>',
+    tooltip: {
+      shared: true,
+      x: { formatter: (val, opts) => bucketTitle(series[opts.dataPointIndex].key, bucket) },
+      y: { formatter: (val) => val + ' tasks' },
     },
   });
 }
 
-/** Hours logged per day - columns with an average line. */
-function renderDailyHoursChart(days) {
-  const values = days.map((d) => d.hours);
+/** Hours logged per bucket of the period - columns with an average line. */
+function renderHoursChart(series, bucket) {
+  const values = series.map((b) => b.hours);
   const average = values.length ? sum(values) / values.length : 0;
   return renderChart('#dailyHoursChart', {
     series: [{ name: 'Hours logged', data: values }],
     chart: { type: 'bar', height: 280 },
     colors: [CHART_COLORS.primary],
-    plotOptions: { bar: { columnWidth: '58%', borderRadius: 3 } },
+    plotOptions: { bar: { columnWidth: series.length === 1 ? '20%' : '58%', borderRadius: 3 } },
     stroke: { width: 0 },
     xaxis: {
-      categories: days.map((d) => moment(d.day).format('D MMM')),
-      tickAmount: 10,
+      categories: series.map((b) => bucketLabel(b.key, bucket)),
+      tickAmount: Math.min(series.length, 12),
       labels: { rotate: 0, hideOverlappingLabels: true },
       tooltip: { enabled: false },
     },
     yaxis: { labels: { formatter: (val) => Math.round(val) + 'h' } },
-    annotations: average > 0 ? {
+    annotations: average > 0 && values.length > 1 ? {
       yaxis: [{
         y: average,
         borderColor: CHART_COLORS.orange,
@@ -444,7 +375,7 @@ function renderDailyHoursChart(days) {
       }],
     } : {},
     tooltip: {
-      x: { formatter: (val, opts) => moment(days[opts.dataPointIndex].day).format('ddd, D MMM') },
+      x: { formatter: (val, opts) => bucketTitle(series[opts.dataPointIndex].key, bucket) },
       y: { formatter: (val) => val.toFixed(1) + ' h' },
     },
   });
@@ -485,64 +416,17 @@ function renderEmployeeHoursChart(employees) {
   });
 }
 
-/** Hours per weekday over the last 12 weeks - GitHub-style heatmap on a single-hue ramp. */
-function renderHeatmapChart(days) {
-  const today = moment().startOf('day');
-  const byWeek = new Map();
-  days.forEach((d) => {
-    const date = moment(d.day);
-    const week = date.clone().isoWeekday(1).format('YYYY-MM-DD');
-    if (!byWeek.has(week)) byWeek.set(week, {});
-    byWeek.get(week)[date.isoWeekday()] = d.hours;
-  });
-  const weeks = Array.from(byWeek.keys()).sort().slice(-12);
-  const max = Math.max(1, ...days.map((d) => d.hours));
-  const step = max / 5;
-
-  // Apex draws the first series at the bottom, so list Sunday first to put Monday on top.
-  const weekdays = [7, 6, 5, 4, 3, 2, 1];
-  const series = weekdays.map((weekday) => ({
-    name: moment().isoWeekday(weekday).format('ddd'),
-    data: weeks.map((week) => {
-      const date = moment(week).isoWeekday(weekday);
-      const value = byWeek.get(week)[weekday];
-      return { x: moment(week).format('D MMM'), y: date.isAfter(today) ? -1 : Math.round((value || 0) * 10) / 10, day: date.format('ddd, D MMM') };
-    }),
-  }));
-
-  const ramp = ['#e0e7ff', '#c7d2fe', '#a5b4fc', '#6366f1', '#4338ca'];
+/** Hours logged per weekday in the period - columns, Monday first. */
+function renderWeekdayChart(weekdayHours) {
   return renderChart('#activityHeatmap', {
-    series,
-    chart: { type: 'heatmap', height: 280 },
-    plotOptions: {
-      heatmap: {
-        radius: 4,
-        enableShades: false,
-        colorScale: {
-          ranges: [
-            { from: -1, to: -0.5, color: '#ffffff', name: 'Upcoming' },
-            { from: 0, to: 0, color: '#f1f5f9', name: 'None' },
-            ...ramp.map((color, i) => ({
-              from: i === 0 ? 0.01 : step * i,
-              to: i === ramp.length - 1 ? max + 1 : step * (i + 1),
-              color,
-              name: i === ramp.length - 1 ? Math.round(step * i) + 'h+' : Math.round(step * i) + '–' + Math.round(step * (i + 1)) + 'h',
-            })),
-          ],
-        },
-      },
-    },
-    stroke: { width: 3, colors: [CHART_COLORS.surface] },
-    legend: { show: true, position: 'bottom', markers: { radius: 3 } },
-    xaxis: { labels: { rotate: 0, hideOverlappingLabels: true }, tooltip: { enabled: false } },
-    grid: { padding: { top: -16 } },
-    tooltip: {
-      custom: ({ seriesIndex, dataPointIndex, w }) => {
-        const point = w.config.series[seriesIndex].data[dataPointIndex];
-        const text = point.y < 0 ? 'Upcoming' : point.y + ' h logged';
-        return '<div class="fx-apex-tip"><strong>' + point.day + '</strong><span>' + text + '</span></div>';
-      },
-    },
+    series: [{ name: 'Hours logged', data: WEEKDAYS.map((day, i) => weekdayHours[i] || 0) }],
+    chart: { type: 'bar', height: 280 },
+    colors: [CHART_COLORS.primary],
+    plotOptions: { bar: { columnWidth: '50%', borderRadius: 3 } },
+    stroke: { width: 0 },
+    xaxis: { categories: WEEKDAYS, tooltip: { enabled: false } },
+    yaxis: { labels: { formatter: (val) => Math.round(val) + 'h' } },
+    tooltip: { y: { formatter: (val) => val.toFixed(1) + ' h' } },
   });
 }
 

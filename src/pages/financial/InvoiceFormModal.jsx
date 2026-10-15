@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { initializeSelect2 } from '../../lib/customFunctions';
 import InvoiceItemsEditor from './InvoiceItemsEditor';
 import InvoiceTotalsEditor from './InvoiceTotalsEditor';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 /**
  * The frame of a Create/Edit invoice modal. The fields at the top (client or vendor, dates, status)
@@ -17,7 +18,7 @@ export default function InvoiceFormModal({ idPrefix, saveButtonId, itemRowClass,
   // Initialize select2 on the status dropdown of the form
   useEffect(() => {
     initializeSelect2([{ id: idPrefix + 'Status', placeholder: 'Select Status' }]);
-    return () => $('#' + idPrefix + 'Status').select2('destroy');
+    return () => destroySelect2('#' + idPrefix + 'Status');
   }, []);
 
   return (

@@ -1,4 +1,4 @@
-import { goToLandingPage } from '../../lib/landingPage';
+import { goToLandingPage, resolveLandingPage } from '../../lib/landingPage';
 import api from '../../api/client';
 import { Session } from '../../lib/session';
 
@@ -14,8 +14,9 @@ export const loginUser = async (target, { login, logout, navigate, setSigningIn 
   setSigningIn(true);
 
   let user;
+  let landing;
   try {
-    user = await login(username.value, password.value);
+    ({ user, landing } = await login(username.value, password.value));
   } catch (error) {
     setSigningIn(false);
     toastr["error"]('Invalid User Credentials', 'ERROR');
@@ -55,7 +56,12 @@ export const loginUser = async (target, { login, logout, navigate, setSigningIn 
     return;
   }
 
-  // The role's home page if the user may open it, else the first dashboard they're allowed
+  // The role's home page if the user may open it, else the first dashboard they're allowed.
+  // The login answer already carries the role and permissions, so no extra round trips.
+  if (landing) {
+    navigate(resolveLandingPage(landing.role, landing.permissions), { replace: true });
+    return;
+  }
   goToLandingPage(user.roles[0], navigate);
 };
 

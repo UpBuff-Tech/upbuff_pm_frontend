@@ -55,22 +55,30 @@ export default function TicketCards({ tickets, onView }) {
             data-id={ticket._id}
             onClick={(event) => handleCardClick(event, ticket._id)}
             onKeyDown={(event) => { if (event.key === 'Enter') handleCardClick(event, ticket._id); }}>
+            {/* ID + age */}
             <div className="tk-card-top">
-              <a href="#" className="viewTicket tk-ticket-id" data-id={ticket._id}
+              <a href="#" className="viewTicket tk-card-id" data-id={ticket._id}
                 onClick={(event) => onView(event, ticket._id)}>{ticket.ticketId}</a>
-              <TicketPriorityBadge priority={ticket.priority} fallback="low" />
+              <span className="tk-card-age" title={formatDateTime(ticket.createdAt)}>
+                <i className="bx bx-time-five"></i>{ticket.createdAt ? moment(ticket.createdAt).fromNow(true) : '–'}
+              </span>
             </div>
 
+            {/* Subject: always two lines tall, so the cards of a row line up */}
             <div className="tk-card-subject" title={ticket.subject}>
               {ticket.subject}
               {hasAttachments(ticket.attachments) && <i className="bx bx-paperclip" title="Has attachments"></i>}
             </div>
-            {ticket.clientName && <div className="tk-card-client"><i className="bx bx-buildings"></i>{ticket.clientName}</div>}
 
-            <div className="tk-card-badges">
-              <TicketStatusBadge status={ticket.status} holdReason={ticket.holdReason} />
-              <span className={'tk-type ' + typeColorClass(ticket.typeCode)}>{ticket.typeCode}</span>
-              <TaskRequestTypeBadge requestType={ticket.requestType} />
+            {/* Client + type */}
+            <div className="tk-card-meta">
+              <span className="tk-card-client" title={ticket.clientName || ''}>
+                <i className="bx bx-buildings"></i>{ticket.clientName || 'No client'}
+              </span>
+              <span className="tk-card-tags">
+                {ticket.typeCode && <span className={'tk-type ' + typeColorClass(ticket.typeCode)}>{ticket.typeCode}</span>}
+                <TaskRequestTypeBadge requestType={ticket.requestType} />
+              </span>
             </div>
 
             {progress && (
@@ -81,20 +89,22 @@ export default function TicketCards({ tickets, onView }) {
               </div>
             )}
 
+            {/* Status + priority, assignee */}
             <div className="tk-card-footer">
+              <span className="tk-card-state">
+                <TicketStatusBadge status={ticket.status} holdReason={ticket.holdReason} />
+                <TicketPriorityBadge priority={ticket.priority} fallback="low" />
+              </span>
               {ticket.assignedToName ? (
-                <span className="tk-assignee" title={ticket.assignedToName}>
+                <span className="tk-assignee" title={'Assigned to ' + ticket.assignedToName}>
                   <span className="tk-avatar">{initials(ticket.assignedToName)}</span>
-                  <span className="tk-assignee-name">{ticket.assignedToName}</span>
+                  <span className="tk-assignee-name">{ticket.assignedToName.split(' ')[0]}</span>
                 </span>
               ) : (
-                <span className="tk-assignee tk-unassigned">
-                  <span className="tk-avatar"><i className="bx bx-user"></i></span>Unassigned
+                <span className="tk-assignee tk-unassigned" title="Unassigned">
+                  <span className="tk-avatar"><i className="bx bx-user"></i></span>
                 </span>
               )}
-              <span className="tk-created" title={formatDateTime(ticket.createdAt)}>
-                <i className="bx bx-time-five"></i>{ticket.createdAt ? moment(ticket.createdAt).fromNow(true) : '–'}
-              </span>
             </div>
           </div>
         );

@@ -34,6 +34,7 @@ import {
 } from '../../lib/taskDailyHours';
 import { ReportLoading, ReportEmptyState } from '../employeeTaskReport/ReportStates';
 import { getStatusBadge, hasReportTasks, getReportRangeLabel, formatDate } from '../employeeTaskReport/utility';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 const FULL_WIDTH = { width: '100%' };
 const TOTAL_FONT = { fontSize: '1.1rem' };
@@ -192,7 +193,7 @@ export default function ClientTaskReport() {
 
     return () => {
       $('#clientSelect').off('change', onClientChange);
-      $('#clientSelect, #projectSelect, #employeeSelect').select2('destroy');
+      destroySelect2('#clientSelect, #projectSelect, #employeeSelect');
     };
   }, []);
 

@@ -428,12 +428,12 @@ export default function ClientTask() {
 
                     {/* Pagination */}
                     {showPagination && (
-                      <div className="d-flex flex-column align-items-center gap-2 px-4 py-3 border-top">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 px-4 py-3 border-top">
                         <span className="text-muted small">
                           Showing {paginationFrom}–{paginationTo} of {totalTasks} tasks
                         </span>
                         <nav aria-label="Task pagination">
-                          <ul className="pagination pagination-sm mb-0">
+                          <ul className="pagination pagination-sm m-0">
                             <li className={'page-item ' + (hasPrevPage ? '' : 'disabled')}>
                               <a className="page-link" href="#" id="clientPrevPage" onClick={handlePrevPage}>
                                 <i className="bx bx-chevron-left"></i>

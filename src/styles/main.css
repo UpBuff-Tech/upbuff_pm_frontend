@@ -204,81 +204,141 @@ color: #28a745 !important;
 /* ==============
   Pagination
 ===================*/
-/* Pagination wrapper: center it on every page (previously right-aligned on some
-   pages via flex-end, which is why pagination sat left/middle/right depending on
-   the page). Now uniform across the app. */
+/* One style for every paginated page: a compact segmented bar in the bottom-right corner of
+   the list. The auto left margin pushes it right inside any wrapper a page uses
+   (text-center, text-right or none). */
 .text-right{
   display: flex;
-  justify-content: center;
-  padding-top: 2em;
+  justify-content: flex-end;
+  padding-top: 1.25rem;
 }
-/* ============================================================================
-   Global pagination — one modern "pill" style shared by every page (ticket list,
-   client tasks, and any future paginated view). Covers both markup variants used
-   in the app: Bootstrap's .page-item.active and the older .pagination li.active.
-   ========================================================================== */
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+}
 .pagination {
-  gap: 6px;
+  display: inline-flex;
+  align-items: center;
   flex-wrap: wrap;
-  /* Center the pagination bar within whatever wrapper a page uses (text-center,
-     text-right, or none). The auto margins center it even inside a flex wrapper
-     that would otherwise push it to one side — so every page aligns the same. */
-  justify-content: center;
+  gap: 2px;
   width: fit-content;
   max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 1.25rem 0 0 auto;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--fx-border, #e4e6ef);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.pagination .page-item {
+  margin: 0;
 }
 .pagination .page-link {
-  border: 1px solid #e4e6ef !important;
-  border-radius: 8px !important;
-  color: #334155 !important;
-  min-width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 12px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background-color: transparent !important;
+  color: #475569 !important;
+  font-size: 0.8125rem;
   font-weight: 500;
-  background-color: #fff !important;
-  transition: all 0.15s ease;
+  line-height: 1;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
-.pagination .page-link:focus,
+.pagination .page-link i {
+  font-size: 1.1rem;
+}
 .pagination .page-link:hover {
-  background-color: #f0f0ff !important;
-  border-color: #4f46e5 !important;
-  color: #4f46e5 !important;
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
-.pagination .page-link:focus {
-  box-shadow: 0 0 0 0.15rem rgba(79, 70, 229, 0.25) !important;
+.pagination .page-link:focus-visible {
+  outline: 2px solid rgba(79, 70, 229, 0.35);
+  outline-offset: 1px;
 }
-/* Active page — brand purple, raised */
+/* Current page */
 .pagination .page-item.active .page-link,
 .pagination li.active .page-link {
-  background-color: #4f46e5 !important;
-  border-color: #4f46e5 !important;
+  background-color: var(--fx-primary, #4f46e5) !important;
   color: #fff !important;
-  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.4);
+  font-weight: 600;
 }
-/* Disabled Previous/Next */
+/* Previous / Next with nowhere to go */
 .pagination .page-item.disabled .page-link,
 .pagination li.disabled .page-link {
-  color: #a7acb9 !important;
-  background-color: #f9fafd !important;
-  border-color: #e4e6ef !important;
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
   cursor: not-allowed;
-  box-shadow: none;
+  pointer-events: none;
 }
 
-.previous-page, .next-page {
-  color: #334155 !important;
-  background-color: #fff !important;
+/* ==============
+  View toggle (Table / Cards ...)
+===================*/
+/* Same look as the pagination bar: a white segmented bar, the chosen view in brand purple. */
+.fx-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--fx-border, #e4e6ef);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-
-.previous-page:focus,
-.previous-page :hover {
-  color: #354558 !important;
-  background-color: #d1d4d7 !important;
+.fx-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.fx-view-toggle button i {
+  font-size: 1.1rem;
+}
+.fx-view-toggle button:hover:not(.active) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.fx-view-toggle button.active {
+  background: var(--fx-primary, #4f46e5);
+  color: #fff;
+  font-weight: 600;
+}
+.fx-view-toggle button:focus-visible {
+  outline: 2px solid rgba(79, 70, 229, 0.35);
+  outline-offset: 1px;
+}
+/* The dashboards' period filter scrolls sideways on narrow screens instead of wrapping */
+.fx-period-filter {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.fx-period-filter button {
+  white-space: nowrap;
+}
+/* Icon-only toggles (no text label) stay square */
+.fx-view-toggle.is-icons button {
+  padding: 0;
+  width: 32px;
 }
 
  /* 

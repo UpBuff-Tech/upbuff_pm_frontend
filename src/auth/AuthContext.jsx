@@ -69,12 +69,20 @@ export function AuthProvider({ children }) {
     }
   }, [userId, loadSessionData]);
 
-  /** Meteor.loginWithPassword(username, password). Returns the user; throws on wrong credentials. */
+  /**
+   * Meteor.loginWithPassword(username, password). Returns { user, landing } - landing is
+   * { permissions, role } for picking the landing page (absent from older servers); throws on
+   * wrong credentials.
+   */
   const login = useCallback(async (username, password) => {
     const result = await api.request('POST', '/auth/login', [username, password]);
     storeLogin(result.id, result.token);
+    if (result.landing && Array.isArray(result.landing.permissions)) {
+      currentPermissions = result.landing.permissions;
+      setPermissions(result.landing.permissions);
+    }
     applyUser(result.user);
-    return result.user;
+    return { user: result.user, landing: result.landing || null };
   }, [applyUser]);
 
   /** Used after Accounts.resetPassword / verifyEmail, which also log the user in. */

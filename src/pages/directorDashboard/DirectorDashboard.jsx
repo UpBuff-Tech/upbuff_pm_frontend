@@ -3,7 +3,9 @@ import moment from 'moment';
 import api from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { CHART_COLORS, renderChart, donutChartOptions, sparklineOptions } from '../adminDashboard/charts';
-import { ChartCard, KpiCard } from '../adminDashboard/widgets';
+import { ChartCard, Delta, KpiCard } from '../adminDashboard/widgets';
+import PeriodFilter from '../../components/PeriodFilter';
+import { bucketLabel, bucketTitle, periodInfo, periodPayload, savedPeriod, savePeriod } from '../../lib/dashboardPeriod';
 import './directorDashboard.css';
 
 // Order chosen so neighbouring slices stay distinguishable (validated for colour-blind separation).
@@ -18,15 +20,19 @@ const TICKET_STATUS_COLORS = {
 };
 const TICKET_PRIORITIES = ['critical', 'high', 'medium', 'low'];
 
+const PERIOD_STORAGE_KEY = 'directorDashboard.period';
+
 const sum = (values) => values.reduce((total, value) => total + (Number(value) || 0), 0);
 
-/** Daily hours folded into 7-day totals (oldest first) - smoother than daily points with weekend zeros. */
-function weeklyTotals(days) {
-  const totals = [];
-  for (let end = days.length; end > 0; end -= 7) {
-    totals.unshift(Math.round(sum(days.slice(Math.max(0, end - 7), end).map((d) => d.hours))));
-  }
-  return totals;
+/** Percentage change, or null when there is nothing to compare against. */
+function changePercent(current, previous) {
+  if (!previous) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function formatHours(hours) {
+  if (hours >= 1000) return (hours / 1000).toFixed(1) + 'k';
+  return (Math.round(hours * 10) / 10).toLocaleString();
 }
 
 function formatTime(seconds) {
@@ -78,9 +84,13 @@ export default function DirectorDashboard() {
   const [projectStats, setProjectStats] = useState(null);
   const [delayedTickets, setDelayedTickets] = useState([]);
   const [isDelayedTicketsLoading, setDelayedTicketsLoading] = useState(true);
-  const [ticketStats, setTicketStats] = useState(null);
+  const [ticketStats, setTicketStats] = useState(null);        // all tickets, right now
+  const [periodTicketStats, setPeriodTicketStats] = useState(null); // tickets raised in the period
   const [ticketTypes, setTicketTypes] = useState([]);
-  const [trends, setTrends] = useState(null);
+  const [activity, setActivity] = useState(null);              // projectTasks.getPeriodActivity
+  const [memberHours, setMemberHours] = useState(null);         // hours per member in the period
+  const [periodKey, setPeriodKey] = useState(() => savedPeriod(PERIOD_STORAGE_KEY));
+  const period = periodInfo(periodKey);
   const [dailyTaskSummary, setDailyTaskSummary] = useState([]);
   const [isDailySummaryLoading, setDailySummaryLoading] = useState(true);
   const [summaryDate, setSummaryDate] = useState(() => new Date());
@@ -121,10 +131,30 @@ export default function DirectorDashboard() {
       if (!err && types) setTicketTypes(types);
     });
 
-    api.call('projectTasks.getDashboardTrends', (err, data) => {
-      setTrends(!err && data ? data : { weekly: [], daily: [], priority: {} });
-    });
   }, [userId, refreshKey]);
+
+  // The numbers that follow the period filter
+  useEffect(() => {
+    if (!userId) return;
+    const payload = periodPayload(periodKey);
+    setActivity(null);
+    setMemberHours(null);
+    setPeriodTicketStats(null);
+    api.call('projectTasks.getPeriodActivity', payload, (err, data) => {
+      setActivity(!err && data ? data : { totals: {}, previous: null, series: [] });
+    });
+    api.call('projectTasks.getEmployeeHours', payload, (err, data) => {
+      setMemberHours(!err && data ? data : []);
+    });
+    api.call('tickets.getStats', { period: payload }, (err, stats) => {
+      setPeriodTicketStats(!err && stats ? stats : { total: 0, byStatus: {}, byPriority: {}, byType: {} });
+    });
+  }, [userId, periodKey, refreshKey]);
+
+  const changePeriod = (key) => {
+    setPeriodKey(key);
+    savePeriod(PERIOD_STORAGE_KEY, key);
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -145,57 +175,59 @@ export default function DirectorDashboard() {
   const totalWeeklySeconds = dailyTaskSummary.reduce((total, u) => total + (u.weeklySeconds || 0), 0);
   const activeMembers = dailyTaskSummary.filter((u) => (u.todaySeconds || 0) > 0).length;
 
-  const daily = (trends && trends.daily) || [];
-  const weekly = (trends && trends.weekly) || [];
-  const last30 = daily.slice(-30);
+  const series = (activity && activity.series) || [];
+  const totals = (activity && activity.totals) || {};
+  const previous = (activity && activity.previous) || null;
+  const periodText = period.label.toLowerCase();
+
+  // Ticket breakdowns: the tickets raised in the period
+  const pts = periodTicketStats || {};
+  const periodByStatus = pts.byStatus || {};
+  const periodTickets = pts.total || 0;
 
   const typeName = (code) => {
     const type = ticketTypes.find((t) => t.code === code);
     return (type && type.name) || code || 'Other';
   };
-  const ticketsByType = ticketStats ? Object.keys(ticketStats.byType || {})
-    .map((code) => ({ label: typeName(code), count: ticketStats.byType[code] }))
+  const ticketsByType = periodTicketStats ? Object.keys(pts.byType || {})
+    .map((code) => ({ label: typeName(code), count: pts.byType[code] }))
     .sort((a, b) => b.count - a.count) : [];
   const delayedByAssignee = countBy(delayedTickets, (t) => t.assignedToName || 'Unassigned');
   const isToday = moment(summaryDate).isSame(moment(), 'day');
 
-  const trendsLoading = trends === null;
+  const activityLoading = activity === null;
   const statsLoading = projectStats === null;
   const ticketsLoading = ticketStats === null;
-  const hasDailyHours = last30.some((d) => d.hours > 0);
-  const hasThroughput = weekly.some((w) => w.created || w.completed);
-  const teamMembers = dailyTaskSummary
-    .filter((m) => (m.weeklySeconds || 0) > 0 || (m.todaySeconds || 0) > 0)
-    .slice()
-    .sort((a, b) => (b.weeklySeconds || 0) - (a.weeklySeconds || 0))
-    .slice(0, 10);
+  const periodTicketsLoading = periodTicketStats === null;
+  const hasHours = series.some((b) => b.hours > 0);
+  const hasThroughput = series.some((b) => b.created || b.completed);
 
   /* ---- Charts ---- */
   useEffect(() => {
-    if (!trends) return undefined;
+    if (!activity) return undefined;
     const charts = [
-      renderChart('#dirHoursSpark', sparklineOptions(weeklyTotals(daily), CHART_COLORS.primary, 'Hours (week)')),
-      hasDailyHours && renderDailyHours(last30),
-      hasThroughput && renderThroughput(weekly),
+      series.length > 1 && renderChart('#dirHoursSpark', sparklineOptions(series.map((b) => b.hours), CHART_COLORS.primary, 'Hours')),
+      hasHours && renderDailyHours(series, period.bucket),
+      hasThroughput && renderThroughput(series, period.bucket),
     ];
     return () => charts.forEach((chart) => chart && chart.destroy());
-  }, [trends]);
+  }, [activity]);
 
   useEffect(() => {
-    if (!ticketStats) return undefined;
+    if (!periodTicketStats) return undefined;
     const charts = [
-      totalTickets > 0 && renderChart('#ticketStatusChart', donutChartOptions(
-        TICKET_STATUSES.map((s) => byStatus[s] || 0),
+      periodTickets > 0 && renderChart('#ticketStatusChart', donutChartOptions(
+        TICKET_STATUSES.map((s) => periodByStatus[s] || 0),
         TICKET_STATUSES.map((s) => TICKET_STATUS_LABELS[s]),
         TICKET_STATUSES.map((s) => TICKET_STATUS_COLORS[s]),
         'Tickets', 320)),
-      totalTickets > 0 && renderBars('#ticketPriorityChart', TICKET_PRIORITIES.map(priorityLabel),
-        TICKET_PRIORITIES.map((p) => (ticketStats.byPriority || {})[p] || 0), 'Tickets', CHART_COLORS.primary),
+      periodTickets > 0 && renderBars('#ticketPriorityChart', TICKET_PRIORITIES.map(priorityLabel),
+        TICKET_PRIORITIES.map((p) => (pts.byPriority || {})[p] || 0), 'Tickets', CHART_COLORS.primary),
       ticketsByType.length > 0 && renderBars('#ticketTypeChart', ticketsByType.slice(0, 6).map((t) => t.label),
         ticketsByType.slice(0, 6).map((t) => t.count), 'Tickets', CHART_COLORS.cyan),
     ];
     return () => charts.forEach((chart) => chart && chart.destroy());
-  }, [ticketStats, ticketTypes]);
+  }, [periodTicketStats, ticketTypes]);
 
   useEffect(() => {
     if (isDelayedTicketsLoading || delayedByAssignee.length === 0) return undefined;
@@ -205,10 +237,10 @@ export default function DirectorDashboard() {
   }, [delayedTickets, isDelayedTicketsLoading]);
 
   useEffect(() => {
-    if (isDailySummaryLoading || teamMembers.length === 0) return undefined;
-    const chart = renderTeamHours(teamMembers, isToday);
+    if (!memberHours || memberHours.length === 0) return undefined;
+    const chart = renderTeamHours(memberHours);
     return () => chart && chart.destroy();
-  }, [dailyTaskSummary, isDailySummaryLoading]);
+  }, [memberHours]);
 
   const handleSummaryDateChange = (event) => {
     const dateVal = event.currentTarget.value;
@@ -231,6 +263,7 @@ export default function DirectorDashboard() {
           <p className="text-muted mb-0">Directors overview of projects, tickets and team performance — {moment().format('dddd, D MMMM')}</p>
         </div>
         <div className="fx-dash-actions">
+          <PeriodFilter value={periodKey} onChange={changePeriod} />
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setRefreshKey((k) => k + 1)}>
             <i className="bx bx-refresh me-1"></i>Refresh
           </button>
@@ -239,9 +272,9 @@ export default function DirectorDashboard() {
 
       {/* KPI tiles */}
       <div className="row g-3 mb-3">
-        <KpiCard id="dirHoursSpark" icon="bx-time-five" tone="primary" label={isToday ? 'Team hours today' : 'Team hours · ' + moment(summaryDate).format('D MMM')}
-          value={formatTime(totalTodaySeconds)} loading={isDailySummaryLoading}>
-          <span className="fx-kpi-note">{formatTime(totalWeeklySeconds)} logged this week</span>
+        <KpiCard id="dirHoursSpark" icon="bx-time-five" tone="primary" label={'Team hours · ' + periodText}
+          value={formatHours(totals.hours || 0)} unit="h" loading={activityLoading}>
+          <Delta value={previous && changePercent(totals.hours || 0, previous.hours)} suffix={'vs ' + period.prevLabel} />
         </KpiCard>
         <KpiCard icon="bx-group" tone="cyan" label="Active members" value={activeMembers} loading={isDailySummaryLoading}>
           <span className="fx-kpi-note">{dailyTaskSummary.length} with tasks · {totalDailyTasks} tasks worked</span>
@@ -291,28 +324,27 @@ export default function DirectorDashboard() {
 
       {/* Hours + ticket status */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-xl-8" title="Hours logged per day" subtitle="Whole team · last 30 days"
-          chartId="dirDailyHoursChart" height={300} loading={trendsLoading} empty={!hasDailyHours && 'No time logged in the last 30 days'} />
-        <ChartCard className="col-xl-4" title="Ticket status" subtitle="All tickets"
-          chartId="ticketStatusChart" height={300} loading={ticketsLoading} empty={!totalTickets && 'No tickets yet'} />
+        <ChartCard className="col-xl-8" title={'Hours logged per ' + period.bucket} subtitle={'Whole team · ' + periodText}
+          chartId="dirDailyHoursChart" height={300} loading={activityLoading} empty={!hasHours && 'No time logged ' + periodText} />
+        <ChartCard className="col-xl-4" title="Ticket status" subtitle={'Tickets raised ' + periodText}
+          chartId="ticketStatusChart" height={300} loading={periodTicketsLoading} empty={!periodTickets && 'No tickets raised ' + periodText} />
       </div>
 
       {/* Team hours + throughput */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-xl-6" title="Team hours by member"
-          subtitle={(isToday ? 'Today' : moment(summaryDate).format('D MMM')) + ' vs this week · top 10'}
-          chartId="teamHoursChart" height={320} loading={isDailySummaryLoading}
-          empty={teamMembers.length === 0 && 'No time logged for this date'} />
-        <ChartCard className="col-xl-6" title="Task throughput" subtitle="Tasks created vs completed per week · last 12 weeks"
-          chartId="dirThroughputChart" height={320} loading={trendsLoading} empty={!hasThroughput && 'No task activity in the last 12 weeks'} />
+        <ChartCard className="col-xl-6" title="Team hours by member" subtitle={'Hours logged ' + periodText + ' · top 10'}
+          chartId="teamHoursChart" height={320} loading={memberHours === null}
+          empty={memberHours && memberHours.length === 0 && 'No time logged ' + periodText} />
+        <ChartCard className="col-xl-6" title="Task throughput" subtitle={'Tasks created vs completed per ' + period.bucket + ' · ' + periodText}
+          chartId="dirThroughputChart" height={320} loading={activityLoading} empty={!hasThroughput && 'No task activity ' + periodText} />
       </div>
 
       {/* Ticket breakdowns */}
       <div className="row g-3 mb-3">
-        <ChartCard className="col-md-6 col-xl-4" title="Tickets by priority" subtitle="All tickets"
-          chartId="ticketPriorityChart" height={240} loading={ticketsLoading} empty={!totalTickets && 'No tickets yet'} />
-        <ChartCard className="col-md-6 col-xl-4" title="Tickets by type" subtitle="Top 6 types"
-          chartId="ticketTypeChart" height={240} loading={ticketsLoading} empty={ticketsByType.length === 0 && 'No tickets yet'} />
+        <ChartCard className="col-md-6 col-xl-4" title="Tickets by priority" subtitle={'Tickets raised ' + periodText}
+          chartId="ticketPriorityChart" height={240} loading={periodTicketsLoading} empty={!periodTickets && 'No tickets raised ' + periodText} />
+        <ChartCard className="col-md-6 col-xl-4" title="Tickets by type" subtitle={'Top 6 types · ' + periodText}
+          chartId="ticketTypeChart" height={240} loading={periodTicketsLoading} empty={ticketsByType.length === 0 && 'No tickets raised ' + periodText} />
         <ChartCard className="col-xl-4" title="Delayed tickets by assignee" subtitle="In progress since before today"
           chartId="delayedByAssigneeChart" height={240} loading={isDelayedTicketsLoading}
           empty={delayedByAssignee.length === 0 && 'No delayed tickets 🎉'} />
@@ -479,23 +511,24 @@ export default function DirectorDashboard() {
 /* Chart builders                                                      */
 /* ------------------------------------------------------------------ */
 
-function renderDailyHours(days) {
-  const values = days.map((d) => d.hours);
+/** Hours logged per bucket of the period - columns with an average line. */
+function renderDailyHours(series, bucket) {
+  const values = series.map((b) => b.hours);
   const average = values.length ? sum(values) / values.length : 0;
   return renderChart('#dirDailyHoursChart', {
     series: [{ name: 'Hours logged', data: values }],
     chart: { type: 'bar', height: 300 },
     colors: [CHART_COLORS.primary],
-    plotOptions: { bar: { columnWidth: '58%', borderRadius: 3 } },
+    plotOptions: { bar: { columnWidth: series.length === 1 ? '20%' : '58%', borderRadius: 3 } },
     stroke: { width: 0 },
     xaxis: {
-      categories: days.map((d) => moment(d.day).format('D MMM')),
-      tickAmount: 10,
+      categories: series.map((b) => bucketLabel(b.key, bucket)),
+      tickAmount: Math.min(series.length, 12),
       labels: { rotate: 0, hideOverlappingLabels: true },
       tooltip: { enabled: false },
     },
     yaxis: { min: 0, labels: { formatter: (val) => Math.round(val) + 'h' } },
-    annotations: average > 0 ? {
+    annotations: average > 0 && values.length > 1 ? {
       yaxis: [{
         y: average,
         borderColor: CHART_COLORS.orange,
@@ -511,46 +544,51 @@ function renderDailyHours(days) {
       }],
     } : {},
     tooltip: {
-      x: { formatter: (val, opts) => moment(days[opts.dataPointIndex].day).format('ddd, D MMM') },
+      x: { formatter: (val, opts) => bucketTitle(series[opts.dataPointIndex].key, bucket) },
       y: { formatter: (val) => val.toFixed(1) + ' h' },
     },
   });
 }
 
-function renderThroughput(weekly) {
+/** Tasks created vs completed per bucket of the period - area chart. */
+function renderThroughput(series, bucket) {
   return renderChart('#dirThroughputChart', {
     series: [
-      { name: 'Created', data: weekly.map((w) => w.created) },
-      { name: 'Completed', data: weekly.map((w) => w.completed) },
+      { name: 'Created', data: series.map((b) => b.created) },
+      { name: 'Completed', data: series.map((b) => b.completed) },
     ],
     chart: { type: 'area', height: 320 },
     colors: [CHART_COLORS.primary, CHART_COLORS.cyan],
     fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.02, stops: [0, 95] } },
-    markers: { size: 0, hover: { size: 5 } },
-    xaxis: { categories: weekly.map((w) => moment(w.weekStart).format('D MMM')), tooltip: { enabled: false } },
+    markers: { size: series.length === 1 ? 5 : 0, hover: { size: 5 } },
+    xaxis: {
+      categories: series.map((b) => bucketLabel(b.key, bucket)),
+      tickAmount: Math.min(series.length, 12),
+      labels: { rotate: 0, hideOverlappingLabels: true },
+      tooltip: { enabled: false },
+    },
     yaxis: { min: 0, labels: { formatter: (val) => Math.round(val) } },
     legend: { position: 'top', horizontalAlign: 'left' },
-    tooltip: { shared: true, x: { formatter: (val) => 'Week of ' + val }, y: { formatter: (val) => val + ' tasks' } },
+    tooltip: {
+      shared: true,
+      x: { formatter: (val, opts) => bucketTitle(series[opts.dataPointIndex].key, bucket) },
+      y: { formatter: (val) => val + ' tasks' },
+    },
   });
 }
 
-/** Each member's hours on the chosen day and in the week - grouped horizontal bars (one unit, one axis). */
-function renderTeamHours(members, isToday) {
-  const hours = (seconds) => Math.round(((seconds || 0) / 3600) * 10) / 10;
+/** Each member's hours in the period - horizontal bars, top 10. */
+function renderTeamHours(members) {
   return renderChart('#teamHoursChart', {
-    series: [
-      { name: isToday ? 'Today' : 'That day', data: members.map((m) => hours(m.todaySeconds)) },
-      { name: 'This week', data: members.map((m) => hours(m.weeklySeconds)) },
-    ],
+    series: [{ name: 'Hours', data: members.map((m) => m.hours) }],
     chart: { type: 'bar', height: 320 },
-    colors: [CHART_COLORS.orange, CHART_COLORS.primary],
-    plotOptions: { bar: { horizontal: true, barHeight: '72%', borderRadius: 2 } },
-    stroke: { show: true, width: 2, colors: [CHART_COLORS.surface] },
-    xaxis: { categories: members.map((m) => m.employeeName), labels: { formatter: (val) => Math.round(val) + 'h' } },
+    colors: [CHART_COLORS.primary],
+    plotOptions: { bar: { horizontal: true, barHeight: '58%', borderRadius: 3 } },
+    stroke: { width: 0 },
+    xaxis: { categories: members.map((m) => m.name), labels: { formatter: (val) => Math.round(val) + 'h' } },
     yaxis: { labels: { maxWidth: 140, style: { colors: CHART_COLORS.text, fontSize: '12px' } } },
     grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
-    legend: { position: 'top', horizontalAlign: 'left' },
-    tooltip: { shared: true, intersect: false, y: { formatter: (val) => val + ' h' } },
+    tooltip: { y: { formatter: (val) => val.toLocaleString() + ' h' } },
   });
 }
 

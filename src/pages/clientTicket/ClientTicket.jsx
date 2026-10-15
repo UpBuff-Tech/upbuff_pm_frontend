@@ -18,6 +18,7 @@ import {
   truncate
 } from './utils';
 import { TableSkeleton } from '../../components/skeleton/Skeleton';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 /** One of the four statistics cards at the top of the page. */
 function StatCard({ label, value, colorClass, icon }) {
@@ -178,7 +179,7 @@ export default function ClientTicket() {
     select.on('change', onChange);
     return () => {
       select.off('change', onChange);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, [isReady]);
 

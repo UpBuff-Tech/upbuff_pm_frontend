@@ -563,27 +563,33 @@ export default function GanttChart() {
 
     if (clientIds.length === 0) return projects;
 
-    // Track pending requests
-    let pendingRequests = clientIds.length;
     const clientMap = {};
+    const applyNames = () => {
+      if (pageClosed.current) return;
+      const withName = (project) => (project && project.companyName && clientMap[project.companyName]
+        ? { ...project, companyDisplayName: clientMap[project.companyName] }
+        : project);
+      setProjectList(projects.map(withName));
+      setCurrentProject((current) => withName(current));
+    };
 
-    // Fetch all client names and batch update
+    // Staff see every client's projects: all names come in ONE request (one request per client
+    // queued behind each other and delayed the chart). A client user only has their own client.
+    const isClient = user && user.profile && user.profile.role === 'client';
+    if (!isClient) {
+      api.call('clients.list', (error, clients) => {
+        if (!error && clients) clients.forEach((client) => { clientMap[client._id] = client.name; });
+        applyNames();
+      });
+      return projects;
+    }
+
+    let pendingRequests = clientIds.length;
     clientIds.forEach(clientId => {
       api.call('clients.getById', clientId, (error, client) => {
         pendingRequests--;
-
-        if (!error && client) {
-          clientMap[clientId] = client.name;
-        }
-
-        // Only update once all requests are complete
-        if (pendingRequests === 0 && !pageClosed.current) {
-          const withName = (project) => (project && project.companyName && clientMap[project.companyName]
-            ? { ...project, companyDisplayName: clientMap[project.companyName] }
-            : project);
-          setProjectList(projects.map(withName));
-          setCurrentProject((current) => withName(current));
-        }
+        if (!error && client) clientMap[clientId] = client.name;
+        if (pendingRequests === 0) applyNames();
       });
     });
 

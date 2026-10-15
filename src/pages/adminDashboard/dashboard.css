@@ -17,12 +17,9 @@
 .fx-dash-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.75rem;
-}
-
-.fx-updated {
-  font-size: 0.8125rem;
-  color: var(--fx-text-subtle);
+  max-width: 100%;
 }
 
 /* ---- KPI tiles ---- */
@@ -333,6 +330,41 @@
   font-weight: 700;
 }
 
+.fx-member-more {
+  padding: 3px 10px;
+  cursor: pointer;
+  color: var(--fx-text-muted);
+}
+
+.fx-member-more:hover {
+  background: var(--fx-surface-hover);
+  color: var(--fx-text);
+}
+
+.fx-assign-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fx-assign-tools .input-group {
+  width: 260px;
+}
+
+.fx-assign-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1rem;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 767px) {
+  .fx-assign-tools { flex-wrap: wrap; }
+  .fx-assign-tools .input-group { width: 100%; }
+}
+
 .fx-member-time {
   color: var(--fx-text-muted);
   font-variant-numeric: tabular-nums;
@@ -378,4 +410,49 @@
   font-weight: 600;
   color: var(--fx-text);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---- Overdue projects list ---- */
+.fx-overdue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.fx-overdue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.25rem;
+  border-bottom: 1px solid var(--fx-border);
+}
+
+.fx-overdue-item:last-child {
+  border-bottom: 0;
+}
+
+.fx-overdue-main {
+  min-width: 0;
+}
+
+.fx-overdue-name {
+  font-weight: 600;
+  color: var(--fx-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fx-overdue-meta,
+.fx-overdue-due {
+  font-size: 0.75rem;
+  color: var(--fx-text-muted);
+}
+
+.fx-overdue-late {
+  flex-shrink: 0;
+  text-align: right;
 }

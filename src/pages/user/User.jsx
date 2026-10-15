@@ -66,7 +66,7 @@ export default function User() {
   const [roleNameArray, setRoleNameArray] = useState();
   const [modalLoader, setModalLoader] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [view, setView] = useState('card');
+  const [view, setView] = useState('table'); // the table opens first; the Card button switches
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
   const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
   const [detail, setDetail] = useState(null);
@@ -289,14 +289,14 @@ export default function User() {
           </div>
           <div className="d-flex gap-2">
             {/* View Toggle Buttons */}
-            <div className="btn-group" role="group">
-              <button type="button" className={'btn btn-outline-primary view-toggle' + (view === 'card' ? ' active' : '')}
-                data-view="card" id="cardViewBtn" onClick={(event) => toggleView(event, 'card')}>
-                <i className="bx bx-grid-alt"></i> Card
-              </button>
-              <button type="button" className={'btn btn-outline-primary view-toggle' + (view === 'table' ? ' active' : '')}
+            <div className="fx-view-toggle" role="group" aria-label="View">
+              <button type="button" className={'view-toggle' + (view === 'table' ? ' active' : '')} aria-pressed={view === 'table'}
                 data-view="table" id="tableViewBtn" onClick={(event) => toggleView(event, 'table')}>
-                <i className="bx bx-list-ul"></i> Table
+                <i className="bx bx-list-ul"></i>Table
+              </button>
+              <button type="button" className={'view-toggle' + (view === 'card' ? ' active' : '')} aria-pressed={view === 'card'}
+                data-view="card" id="cardViewBtn" onClick={(event) => toggleView(event, 'card')}>
+                <i className="bx bx-grid-alt"></i>Cards
               </button>
             </div>
             {/* Create Button */}

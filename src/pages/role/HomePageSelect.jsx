@@ -7,6 +7,7 @@
 
 import { useEffect, useRef } from 'react';
 import { AVAILABLE_PAGES } from './permissions';
+import { destroySelect2 } from '../../lib/destroySelect2';
 
 export default function HomePageSelect({ id, className, name, value, onChange, select2Options }) {
   const selectRef = useRef(null);
@@ -24,7 +25,7 @@ export default function HomePageSelect({ id, className, name, value, onChange, s
 
     return () => {
       select.off('change', onSelect2Change);
-      select.select2('destroy');
+      destroySelect2(select);
     };
   }, [isSelect2]);
 
