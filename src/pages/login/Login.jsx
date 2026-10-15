@@ -64,19 +64,9 @@ export default function Login() {
     loginUser(event.target, { login, logout, navigate, setSigningIn });
   };
 
-  // The theme script (main.js) may also switch this field when the icon itself is clicked,
-  // so the current state is read from the input, as before.
-  const togglePassword = (event) => {
-    const passwordInput = $('#password');
-    const icon = $(event.currentTarget).find('i');
-    if (passwordInput.attr('type') === 'password') {
-      passwordInput.attr('type', 'text');
-      icon.removeClass('bx-hide').addClass('bx-show');
-    } else {
-      passwordInput.attr('type', 'password');
-      icon.removeClass('bx-show').addClass('bx-hide');
-    }
-  };
+  // The field is deliberately not inside .form-password-toggle: the theme script (main.js) binds its
+  // own toggle to icons there, which flipped the field back on every click.
+  const [showPassword, setShowPassword] = useState(false);
 
   const openSuggestionModal = (event) => {
     event.preventDefault();
@@ -187,7 +177,7 @@ export default function Login() {
                     placeholder="you@company.com" autoComplete="username" autoFocus />
                 </div>
               </div>
-              <div className="mb-3 form-password-toggle">
+              <div className="mb-3">
                 <div className="d-flex justify-content-between align-items-center">
                   <label className="form-label" htmlFor="password">Password</label>
                   <a href="" className="forgot-password-link" onClick={(event) => event.preventDefault()}>
@@ -196,11 +186,13 @@ export default function Login() {
                 </div>
                 <div className="login-field">
                   <i className="bx bx-lock-alt login-field-icon"></i>
-                  <input type="password" id="password" className="form-control login-input login-input-password" name="password"
+                  <input type={showPassword ? 'text' : 'password'} id="password" className="form-control login-input login-input-password" name="password"
                     placeholder="Enter your password" autoComplete="current-password"
                     aria-describedby="password" required />
-                  <button type="button" className="login-password-toggle" onClick={togglePassword} aria-label="Show password">
-                    <i className="bx bx-hide"></i>
+                  <button type="button" className="login-password-toggle" onClick={() => setShowPassword((shown) => !shown)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}>
+                    <i className={'bx ' + (showPassword ? 'bx-hide' : 'bx-show')}></i>
                   </button>
                 </div>
               </div>
