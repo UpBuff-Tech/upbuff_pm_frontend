@@ -85,9 +85,41 @@ export function renderChart(selector, options) {
   // Clear previous chart
   chartEl.innerHTML = '';
 
-  const chart = new ApexCharts(chartEl, chartOptions(options));
-  chart.render();
-  return chart;
+  if (window.ApexCharts) {
+    const chart = new ApexCharts(chartEl, chartOptions(options));
+    chart.render();
+    return chart;
+  }
+
+  // After a page refresh the layout is still loading the ApexCharts script (a page's effects run
+  // before the layout's), so draw the chart as soon as it is there. The returned object has the
+  // same destroy() the callers use, which also cancels a chart that was not drawn yet.
+  let chart = null;
+  let cancelled = false;
+  whenApexChartsLoaded().then(() => {
+    if (cancelled || !chartEl.isConnected) return;
+    chart = new ApexCharts(chartEl, chartOptions(options));
+    chart.render();
+  });
+  return {
+    destroy() {
+      cancelled = true;
+      if (chart) chart.destroy();
+    }
+  };
+}
+
+/** Resolves once the ApexCharts script has run (checks every 50 ms, gives up after 20 s). */
+function whenApexChartsLoaded() {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      if (window.ApexCharts || Date.now() - startedAt > 20000) {
+        clearInterval(timer);
+        if (window.ApexCharts) resolve();
+      }
+    }, 50);
+  });
 }
 
 /**
