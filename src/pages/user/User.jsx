@@ -33,6 +33,20 @@ const EMPTY_CONFIRM = {
   userHeaders: '',
 };
 
+// Only what the table / cards show. Attachments and the profile photo are base64 files (up to 10MB
+// each), so they are left out here; View and Edit load the full user through user.dataGets.
+const TABLE_FIELDS = {
+  'profile.firstName': 1,
+  username: 1,
+  active: 1,
+  contactNo: 1,
+  emailAddress: 1,
+  companyEmail: 1,
+  joinedDate: 1,
+  roles: 1,
+};
+const CARD_FIELDS = { ...TABLE_FIELDS, 'profile.logo': 1 };
+
 export default function User() {
   const { userCan, roles, userId, refreshUser } = useAuth();
 
@@ -41,25 +55,7 @@ export default function User() {
       userType: "Employee"
     },
     sort: { createdAt: -1 },
-    fields: {
-      profile: 1,
-      username: 1,
-      emails: 1,
-      active: 1,
-      createdAt: 1,
-      companyId: 1,
-      contactNo: 1,
-      emailAddress: 1,
-      companyEmail: 1,
-      address: 1,
-      joinedDate: 1,
-      leavingDate: 1,
-      roles: 1,
-      salaryAmount: 1,
-      salaryRevision: 1,
-      attachments: 1,
-      userType: 1
-    },
+    fields: TABLE_FIELDS,
     perPage: 12
   });
 
@@ -115,6 +111,8 @@ export default function User() {
   const toggleView = (event, newView) => {
     event.preventDefault();
     setView(newView);
+    // Only the cards show the profile photo
+    pagination.fields(newView === 'card' ? CARD_FIELDS : TABLE_FIELDS);
   };
 
   /**

@@ -154,11 +154,7 @@ export default function Topbar() {
                 <div className="fx-user-dropdown-group">
                   <button type="button" className="fx-user-dropdown-item" role="menuitem" onClick={() => openProfile('details')}>
                     <span className="fx-item-icon"><i className="bx bx-user"></i></span>
-                    <span className="fx-item-text">My profile<small>View your details</small></span>
-                  </button>
-                  <button type="button" className="fx-user-dropdown-item" role="menuitem" onClick={() => openProfile('edit')}>
-                    <span className="fx-item-icon"><i className="bx bx-edit-alt"></i></span>
-                    <span className="fx-item-text">Edit profile<small>Name, contact, photo</small></span>
+                    <span className="fx-item-text">My profile<small>View and edit your details</small></span>
                   </button>
                 </div>
                 <div className="fx-user-dropdown-group">

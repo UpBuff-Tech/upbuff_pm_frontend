@@ -1,0 +1,328 @@
+/* Client Task Report (ClientTaskReport.jsx): built on the Employee Task Report styles (.etr-*) */
+
+/* Eight filters: four per row, the date range takes two columns */
+.ctr-filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ctr-filter-grid .etr-field-dates {
+  grid-column: span 2;
+}
+
+/* Report type, at the right end of the quick-range bar */
+.ctr-mode {
+  margin-left: auto;
+}
+
+.ctr-mode button i {
+  font-size: 0.95rem;
+}
+
+/* Client + project in one cell: client on top, project as a dot + plain text below */
+.ctr-where {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+  max-width: 230px;
+}
+
+.ctr-where strong,
+.ctr-project {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctr-where strong {
+  color: var(--fx-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ctr-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fx-text-muted);
+  font-size: 0.75rem;
+}
+
+.ctr-project i {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* Task: at most two lines (full name on hover), then the task id and request type */
+.ctr-task {
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.ctr-task-name {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--fx-text);
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ctr-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.ctr-task-meta small {
+  color: var(--fx-text-subtle);
+  font-size: 0.6875rem;
+}
+
+.ctr-task-meta .badge {
+  font-size: 0.625rem;
+}
+
+/* Paged, so the table grows with the page instead of scrolling inside the card */
+.ctr-table-wrap {
+  overflow-x: auto;
+}
+
+/* Pager: a footer row just above the totals */
+.etr-page .etr-table tfoot .ctr-pager-row td {
+  position: static;
+  padding: 0.625rem 0.75rem;
+  border-top: 1px solid var(--fx-border);
+  background: var(--fx-surface);
+  font-weight: 400;
+}
+
+.ctr-pager {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  color: var(--fx-text-muted);
+  font-size: 0.8125rem;
+}
+
+.ctr-pager-info b {
+  color: var(--fx-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctr-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--fx-surface-hover);
+}
+
+.ctr-page {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fx-text-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ctr-page:hover:not(:disabled):not(.is-active) {
+  background: var(--fx-surface);
+  color: var(--fx-primary);
+  box-shadow: var(--fx-shadow-xs);
+}
+
+.ctr-page.is-active {
+  background: var(--fx-primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+  cursor: default;
+}
+
+.ctr-page.is-arrow {
+  padding: 0;
+  font-size: 1.15rem;
+}
+
+.ctr-page:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ctr-page-gap {
+  min-width: 18px;
+  color: var(--fx-text-subtle);
+  text-align: center;
+}
+
+/* Pushed right on its own; sits next to the page buttons when they show */
+.ctr-pager-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 auto;
+  white-space: nowrap;
+}
+
+.ctr-pages + .ctr-pager-size {
+  margin-left: 0;
+}
+
+.ctr-pager-size select {
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--fx-border);
+  border-radius: 8px;
+  background: var(--fx-surface);
+  color: var(--fx-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  outline: 0;
+}
+
+.ctr-pager-size select:focus {
+  border-color: var(--fx-primary);
+  box-shadow: 0 0 0 3px var(--fx-primary-ring);
+}
+
+/* Toolbar: search + status tabs on the left, totals on the right */
+.ctr-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.ctr-totals {
+  display: flex;
+  align-items: stretch;
+  margin-left: auto;
+  border: 1px solid var(--fx-border);
+  border-radius: 10px;
+  background: var(--fx-surface);
+  box-shadow: var(--fx-shadow-xs);
+  overflow: hidden;
+}
+
+.ctr-totals-label,
+.ctr-totals-figure {
+  display: flex;
+  padding: 5px 14px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.ctr-totals-label {
+  align-items: center;
+  gap: 8px;
+  background: var(--fx-primary-soft);
+  color: var(--fx-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.ctr-totals-label > i {
+  font-size: 1.1rem;
+}
+
+.ctr-totals-label > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ctr-totals-label small {
+  color: var(--fx-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.ctr-totals-figure {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ctr-totals-figure + .ctr-totals-figure {
+  border-left: 1px solid var(--fx-border);
+}
+
+.ctr-totals-figure small {
+  color: var(--fx-text-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ctr-totals-figure b {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctr-totals-figure.is-range b { color: var(--fx-success); }
+.ctr-totals-figure.is-total b { color: var(--fx-primary); }
+
+@media (max-width: 767.98px) {
+  .ctr-totals {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .ctr-totals-figure {
+    flex: 1;
+  }
+}
+
+/* Times and totals never wrap */
+.etr-page .etr-time b,
+.etr-page .etr-table tfoot td {
+  white-space: nowrap;
+}
+
+.ctr-day {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.ctr-day small {
+  color: var(--fx-text-subtle);
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 1199.98px) {
+  .ctr-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ctr-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ctr-filter-grid .etr-field-dates {
+    grid-column: auto;
+  }
+
+  .ctr-mode {
+    width: 100%;
+    margin-left: 0;
+  }
+}
