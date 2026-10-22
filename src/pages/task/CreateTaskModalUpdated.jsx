@@ -139,9 +139,11 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
       return;
     }
 
-    api.call('projectTasks.getNextTaskId', projectId, (error, nextTaskId) => {
+    // true = a task made on the Tasks page: its ID gets the "T-" prefix (e.g. T-2.4), so it can be
+    // told apart from the tasks of the project's task plan (2.4)
+    api.call('projectTasks.getNextTaskId', projectId, true, (error, nextTaskId) => {
       if (!isActiveRef.current) return;
-      setGeneratedTaskId(error ? '1.1' : nextTaskId);
+      setGeneratedTaskId(error ? 'T-1.1' : nextTaskId);
     });
 
     // Tickets belong to clients — resolve the project's client first
@@ -262,6 +264,7 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
 
     const taskData = {
       taskId: generatedTaskId,
+      boardTask: true, // made on the Tasks page, not in the project's task plan (see above)
       taskName,
       requestType,
       phase: textFields.phase.trim() || '',

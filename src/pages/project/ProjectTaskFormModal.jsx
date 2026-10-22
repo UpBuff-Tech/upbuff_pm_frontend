@@ -309,7 +309,7 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
       // previous status itself to decide the actual dates.
       api.call('projectTasks.update', taskId, taskData, (error) => {
         if (error) {
-          toastr.error('Failed to update task');
+          toastr.error(error.reason || 'Failed to update task');
           return;
         }
 
@@ -320,7 +320,7 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
       taskData.actualHours = 0;
       api.call('projectTasks.create', projectId, taskData, (error) => {
         if (error) {
-          toastr.error('Failed to create task');
+          toastr.error(error.reason || 'Failed to create task');
           return;
         }
 

@@ -141,6 +141,12 @@ export const PERMISSION_SECTIONS = [
     ],
   },
   {
+    key: 'holidayCalendar', idPrefix: 'holidayCalendar', icon: 'bx bx-calendar-star me-2', title: 'Holiday Calendar',
+    items: [
+      { name: 'holidayCalendar_manage', label: 'Manage', createId: 'holidayCalendarManageCreate', editId: 'holidayCalendarManageEdit' },
+    ],
+  },
+  {
     key: 'suggestions', idPrefix: 'suggestions', icon: 'bx bx-message-rounded-dots me-2', title: 'Suggestions',
     items: [
       { name: 'suggestions_view', label: 'View', createId: 'suggestionsViewCreate', editId: 'suggestionsViewEdit' },
@@ -186,7 +192,7 @@ export const PERMISSION_KEYS = [
   'task_update', 'employeeTaskReport_view', 'clientTaskReport_view', 'attendance_view',
   'attendance_viewAll', 'leaveRequest_approve', 'ganttChart_view', 'allAccounts_view',
   'ticket_view', 'ticket_create', 'ticket_update', 'ticketTypes_view',
-  'ticketTypes_create', 'ticketTypes_update', 'ticketTypes_delete', 'suggestions_view',
+  'ticketTypes_create', 'ticketTypes_update', 'ticketTypes_delete', 'holidayCalendar_manage', 'suggestions_view',
   'syncHealth_view', 'ticketNotification_view', 'sapTicketNotification_view', 'escalationNotification_view',
   'financial_view', 'financial_create', 'financial_update',
 ];
@@ -198,7 +204,7 @@ export const PERMISSION_KEYS = [
 export const AUTO_SELECT_ALL_SECTIONS = [
   'admin', 'directorDashboard', 'userDashboard', 'user', 'role', 'systemConfig', 'client', 'project', 'task',
   'employeeTaskReport', 'allAccounts', 'attendance', 'leaveRequest', 'ganttChart', 'ticket',
-  'ticketTypes', 'suggestions', 'syncHealth', 'ticketNotification', 'sapTicketNotification',
+  'ticketTypes', 'holidayCalendar', 'suggestions', 'syncHealth', 'ticketNotification', 'sapTicketNotification',
   'escalationNotification',
 ];
 
@@ -206,14 +212,14 @@ export const AUTO_SELECT_ALL_SECTIONS = [
 export const EDIT_RESET_SECTIONS = [
   'admin', 'directorDashboard', 'userDashboard', 'user', 'role', 'systemConfig', 'client', 'project', 'task',
   'employeeTaskReport', 'allAccounts', 'attendance', 'leaveRequest', 'ganttChart', 'ticket',
-  'ticketTypes', 'suggestions', 'syncHealth',
+  'ticketTypes', 'holidayCalendar', 'suggestions', 'syncHealth',
 ];
 
 /** Cards whose "Select All" box is worked out after the permissions of a role were loaded into the edit modal. */
 export const EDIT_SELECT_ALL_SECTIONS = [
   'admin', 'directorDashboard', 'userDashboard', 'user', 'role', 'systemConfig', 'client', 'project', 'task',
   'employeeTaskReport', 'allAccounts', 'attendance', 'leaveRequest', 'ganttChart', 'ticket',
-  'ticketTypes', 'suggestions', 'ticketNotification', 'sapTicketNotification',
+  'ticketTypes', 'holidayCalendar', 'suggestions', 'ticketNotification', 'sapTicketNotification',
 ];
 
 /**

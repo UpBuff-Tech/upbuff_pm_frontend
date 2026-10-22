@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import NotificationBadge from '../../components/notifications/NotificationBadge';
 import { closeMobileSidebar, isSidebarCollapsed } from '../sidebarState';
 import menuStyles from './menu.css?inline';
 
@@ -40,7 +39,6 @@ function buildSections(isClientUser, userCan) {
         { to: '/admin/dashboard', icon: 'bx-home-alt', label: 'Dashboard', show: userCan('admindashboard_view') },
         { to: '/director/dashboard', icon: 'bx-bar-chart-alt-2', label: 'Directors Dashboard', show: userCan('directorDashboard_view') },
         { to: '/user/dashboard', icon: 'bx-user-circle', label: 'My Dashboard', show: userCan('userDashboard_view') },
-        { to: '/notifications', icon: 'bx-bell', label: 'Notifications', badge: true },
       ],
     },
     {
@@ -75,6 +73,7 @@ function buildSections(isClientUser, userCan) {
       title: 'Administration',
       items: [
         { to: '/ticketTypes/list', icon: 'bx-category', label: 'Ticket Types', show: userCan('ticketTypes_view') },
+        { to: '/holidays/manage', icon: 'bx-calendar-star', label: 'Holiday Calendar', show: userCan('holidayCalendar_manage') },
         { to: '/suggestions/list', icon: 'bx-message-rounded-dots', label: 'Suggestions', show: userCan('suggestions_view') },
         { to: '/syncHealth/list', icon: 'bx-pulse', label: 'System Incidents', show: userCan('syncHealth_view') },
       ],
@@ -224,7 +223,6 @@ export default function Menu() {
                         aria-current={activeHref === menuItem.to ? 'page' : undefined}>
                         <span className="fx-nav-icon"><i className={'bx ' + menuItem.icon}></i></span>
                         <span className="fx-nav-label">{menuItem.label}</span>
-                        {menuItem.badge && <NotificationBadge />}
                       </Link>
                     </li>
                   ))}

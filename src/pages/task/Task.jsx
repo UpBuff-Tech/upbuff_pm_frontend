@@ -27,6 +27,14 @@ function mapById(list) {
   return map;
 }
 
+/** Today's date as "YYYY-MM-DD" (the value of an <input type="date">). */
+function todayDateString() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export default function Task() {
   const { user, userCan } = useAuth();
   const navigate = useNavigate();
@@ -38,6 +46,8 @@ export default function Task() {
   // Default the board to the current user's tasks, like the original page.
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedUser, setSelectedUser] = useState(() => currentUserId() || '');
+  // The Completed column only shows the tasks completed on this day ("YYYY-MM-DD").
+  const [completedOn, setCompletedOn] = useState(todayDateString);
 
   // One shared 1s tick: card time displays and the banner re-render from this
   // while a timer is running.
@@ -208,6 +218,31 @@ export default function Task() {
   };
 
   /**
+   * Move a task to another status column - used by drag & drop and by the
+   * status dropdown on the cards. The server stops the timer on non-timer
+   * statuses and syncs the linked ticket. `onDone(error)` is optional.
+   */
+  const changeTaskStatus = (taskId, newStatus, oldStatus, onDone) => {
+    api.call('projectTasks.updateStatus', taskId, newStatus, (error) => {
+      if (!isActiveRef.current) return;
+      if (error) {
+        toastr.error(error.reason || 'Failed to update task status');
+        if (onDone) onDone(error);
+        return;
+      }
+      toastr.success(`Task moved to ${newStatus}`);
+      // A move out of In Progress/Testing stops the timer server-side —
+      // drop the legacy engine's local copy of it too.
+      clearLegacyTimerShadow(taskId);
+      autoStartTimerAfterDrop(taskId, newStatus, oldStatus);
+      // Totals are method-based; the move may also have stopped a timer.
+      refreshColumnCounts();
+      refreshTodayHours();
+      if (onDone) onDone(null);
+    });
+  };
+
+  /**
    * Open the Create Task modal. Punch-in is enforced server-side by
    * projectTasks.create — the save button surfaces its error.
    */
@@ -239,6 +274,7 @@ export default function Task() {
     isActive: () => isActiveRef.current,
     selectedProject,
     selectedUser,
+    completedOn,
     timerTick,
     projectsList,
     usersList,
@@ -258,6 +294,7 @@ export default function Task() {
     stopTaskTimer,
     autoStartTimerIfFree,
     autoStartTimerAfterDrop,
+    changeTaskStatus,
     setColumnTasks,
     findLiveTask
   };
@@ -457,6 +494,13 @@ export default function Task() {
                 <option key={u._id} value={u._id}>{userFullName(u)}</option>
               ))}
             </select>
+          </div>
+          <div className="tb-filter">
+            <span className="tb-filter-label"><i className="bx bx-calendar-check"></i>Completed on</span>
+            <input type="date" className="form-control" id="filterByCompletedOn" style={{ width: '160px' }}
+              title="Which day's completed tasks the Completed column shows"
+              value={completedOn} max={todayDateString()}
+              onChange={(event) => setCompletedOn(event.target.value || todayDateString())} />
           </div>
         </div>
 

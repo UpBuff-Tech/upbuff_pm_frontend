@@ -4,7 +4,7 @@
  *   <TaskCardUpdated task={task} board={board} />
  *
  * `task` is the slim card doc of the column; `board` is the Task page's board
- * object (lookup maps, openTaskDetail, startTaskTimer, stopTaskTimer).
+ * object (lookup maps, openTaskDetail, changeTaskStatus, startTaskTimer, stopTaskTimer).
  */
 import { useEffect, useState } from 'react';
 
@@ -16,6 +16,8 @@ import { formatSeconds, userFullName } from './updatedTaskUtils';
 const MAX_SESSION_SECONDS = 8 * 60 * 60; // mirror the server's cap
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
+
+const STATUSES = ['Pending', 'In Progress', 'On Hold', 'Testing', 'Completed']; // the board's columns
 
 const PROJECT_COLORS = [
   { bg: '#4f46e5', text: '#fff' },  // Primary purple
@@ -100,6 +102,12 @@ export default function TaskCardUpdated({ task, board }) {
     setPriority(task.priority || 'Low');
   }, [task.priority]);
 
+  // The status shown in the status dropdown, kept the same way as the priority.
+  const [status, setStatus] = useState(task.status || 'Pending');
+  useEffect(() => {
+    setStatus(task.status || 'Pending');
+  }, [task.status]);
+
   const getProjectName = (projectId) => {
     if (!projectId) return 'Unknown Project';
     if (!board || !board.projectMap) return 'Loading...';
@@ -122,10 +130,10 @@ export default function TaskCardUpdated({ task, board }) {
 
   /**
    * Open the task detail modal — unless the click was on one of the card's
-   * interactive controls (priority dropdown, timer buttons).
+   * interactive controls (priority/status dropdowns, timer buttons).
    */
   const handleCardClick = (event) => {
-    if (event.target.closest('.task-priority-select, .timer-buttons-container')) {
+    if (event.target.closest('.task-priority-select, .task-status-select, .timer-buttons-container')) {
       return;
     }
     if (board && board.openTaskDetail) {
@@ -149,7 +157,7 @@ export default function TaskCardUpdated({ task, board }) {
     }
   };
 
-  const handlePriorityClick = (event) => {
+  const handleSelectClick = (event) => {
     event.stopPropagation(); // don't open the detail modal
   };
 
@@ -172,6 +180,24 @@ export default function TaskCardUpdated({ task, board }) {
     });
   };
 
+  /**
+   * Move the task to another column without opening the edit modal - does
+   * exactly what dragging the card to that column does.
+   */
+  const handleStatusChange = (event) => {
+    event.stopPropagation();
+    const newStatus = event.currentTarget.value;
+    const previousStatus = task.status || 'Pending';
+
+    // Instant feedback; the card moves column once the board reloads
+    setStatus(newStatus);
+
+    board.changeTaskStatus(task._id, newStatus, previousStatus, (error) => {
+      // Revert — the doc didn't change, so nothing else will do it for us
+      if (error) setStatus(previousStatus);
+    });
+  };
+
   const assigneeName = task.assignedTo ? getAssignedUserName(task.assignedTo) : null;
   const projectColor = getProjectColor(task.projectId);
 
@@ -188,13 +214,22 @@ export default function TaskCardUpdated({ task, board }) {
       }}>
       <div className="tc-top">
         <span className="tc-id">{task.taskId}</span>
-        <select className="task-priority-select" data-task-id={task._id} data-priority={priority}
-          title="Change priority" aria-label="Priority"
-          value={priority} onClick={handlePriorityClick} onChange={handlePriorityChange}>
-          {PRIORITIES.map(option => (
-            <option key={option} value={option}>{option}</option>
-          ))}
-        </select>
+        <span className="tc-selects">
+          <select className="task-status-select" data-task-id={task._id} data-status={status}
+            title="Change status" aria-label="Status"
+            value={status} onClick={handleSelectClick} onChange={handleStatusChange}>
+            {STATUSES.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+          <select className="task-priority-select" data-task-id={task._id} data-priority={priority}
+            title="Change priority" aria-label="Priority"
+            value={priority} onClick={handleSelectClick} onChange={handlePriorityChange}>
+            {PRIORITIES.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </span>
       </div>
 
       <div className="tc-tags">

@@ -17,7 +17,6 @@ import Sortable from 'sortablejs';
 
 import api from '../../api/client';
 import { usePublication } from '../../hooks/usePublication';
-import { clearLegacyTimerShadow } from './updatedTaskUtils';
 import TaskCardUpdated from './TaskCardUpdated';
 
 const PAGE_SIZE = 10; // tasks per page (initial load and each "load more")
@@ -35,6 +34,19 @@ function SkeletonCard() {
   );
 }
 
+/**
+ * True when a task was completed on the day "YYYY-MM-DD" (local day). Mirrors
+ * the server: actualFinish, or updatedAt for old tasks that have none.
+ */
+function completedOnDay(task, completedOn) {
+  const finishedAt = task.actualFinish || task.updatedAt;
+  if (!finishedAt) return false;
+  const dayStart = new Date(completedOn + 'T00:00:00');
+  const dayEnd = new Date(completedOn + 'T23:59:59.999');
+  const finished = new Date(finishedAt);
+  return finished >= dayStart && finished <= dayEnd;
+}
+
 export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   const isActiveRef = useRef(true);
   const containerRef = useRef(null);
@@ -46,7 +58,9 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   // The filters this column is scoped to.
   const projectId = board.selectedProject || null;
   const assignedUserId = board.selectedUser || null;
-  const scopeKey = `${projectId || ''}|${assignedUserId || ''}`;
+  // Only the Completed column is limited to one day ("YYYY-MM-DD", see Task.jsx).
+  const completedOn = status === 'Completed' ? (board.completedOn || null) : null;
+  const scopeKey = `${projectId || ''}|${assignedUserId || ''}|${completedOn || ''}`;
 
   // "Load more" raises the limit; a scope change starts again at one page
   // (a limit raised for another scope no longer counts).
@@ -55,7 +69,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
 
   // Own changes reload the column at once (any data-changing call); the interval only picks up
   // colleagues' changes, so 15s is enough - 5 columns polling every 5s queued up the page's requests.
-  const { docs, ready } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit],
+  const { docs, ready } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit, completedOn],
     { intervalMs: 15000 });
 
   // The publication is "ready" again only once docs for the CURRENT filters
@@ -77,6 +91,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     }
     if (projectId && task.projectId !== projectId) return false;
     if (assignedUserId && task.assignedTo !== assignedUserId) return false;
+    if (completedOn && !completedOnDay(task, completedOn)) return false;
     return true;
   };
 
@@ -95,7 +110,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     if (!isActiveRef.current) return;
     const requestId = ++countRequestIdRef.current;
     api.call('projectTasks.getKanbanColumnCount',
-      status, projectId, assignedUserId,
+      status, projectId, assignedUserId, completedOn,
       (error, count) => {
         if (error || !isActiveRef.current || requestId !== countRequestIdRef.current) return;
         setTotal(count || 0);
@@ -141,7 +156,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     // Drag & drop between columns (SortableJS). The container persists across
     // re-renders (only the cards inside change), so this inits once.
     // Data flow on drop: revert Sortable's DOM move so it doesn't fight React,
-    // call updateStatus, and let the publications re-render both columns from
+    // call board.changeTaskStatus, and let the publications re-render both columns from
     // server truth (the server also stops the timer on non-timer statuses and
     // syncs the linked ticket, atomically).
     const sortable = new Sortable(container, {
@@ -171,22 +186,10 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
         evt.item.style.display = 'none';
         evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
 
-        api.call('projectTasks.updateStatus', taskId, newStatus, (error) => {
-          if (!isActiveRef.current) return;
-          if (error) {
+        boardRef.current.changeTaskStatus(taskId, newStatus, oldStatus, (error) => {
+          if (error && isActiveRef.current) {
             evt.item.style.display = ''; // card stays in its source column
-            toastr.error(error.reason || 'Failed to update task status');
-            return;
           }
-          toastr.success(`Task moved to ${newStatus}`);
-          // A move out of In Progress/Testing stops the timer server-side —
-          // drop the legacy engine's local copy of it too.
-          clearLegacyTimerShadow(taskId);
-          const currentBoard = boardRef.current;
-          currentBoard.autoStartTimerAfterDrop(taskId, newStatus, oldStatus);
-          // Totals are method-based; the move may also have stopped a timer.
-          currentBoard.refreshColumnCounts();
-          currentBoard.refreshTodayHours();
         });
       }
     });
@@ -235,7 +238,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
           {!loading && tasks.length === 0 && (
             <div className="kanban-empty">
               <i className="bx bx-layer"></i>
-              <span>No tasks here</span>
+              <span>{completedOn ? 'No tasks completed on this day' : 'No tasks here'}</span>
               <small>Drag a card into this column</small>
             </div>
           )}

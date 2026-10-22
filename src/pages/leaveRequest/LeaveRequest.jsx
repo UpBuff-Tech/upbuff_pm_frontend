@@ -61,6 +61,7 @@ const emptyRequestForm = () => ({
   fromDate: '',
   toDate: '',
   reason: '',
+  optionalDate: '', // the optional holiday picked when type is 'optionalHoliday'
   ownDays: 0, // flexi days of the request being edited (already counted in the balance)
   fromMin: todayIsoDate(),
   toMin: todayIsoDate()
@@ -275,8 +276,33 @@ export default function LeaveRequest() {
     $('#newRequestModal').modal('show');
   };
 
+  // "Optional Holiday": no request or approval, the date is added to my optional picks
+  // (holidays.saveMyOptional takes the full list, so send my current picks plus the new one)
+  const submitOptionalHoliday = () => {
+    const date = requestForm.optionalDate;
+    if (!date) {
+      toastr.error('Please choose an optional holiday');
+      return;
+    }
+
+    const current = (policy.calendar && policy.calendar.mySelection) || [];
+    setIsSubmitting(true);
+    policy.saveOptional([...current, date])
+      .then(() => {
+        toastr.success('Optional holiday added');
+        $('#newRequestModal').modal('hide');
+      })
+      .catch((error) => toastr.error(error.reason || 'Failed to add the optional holiday'))
+      .finally(() => setIsSubmitting(false));
+  };
+
   const submitRequest = (event) => {
     event.preventDefault();
+
+    if (requestForm.type === 'optionalHoliday') {
+      submitOptionalHoliday();
+      return;
+    }
 
     const type = requestForm.type;
     const dayType = requestForm.dayType;
@@ -725,6 +751,7 @@ export default function LeaveRequest() {
       <NewRequestModal
         form={requestForm}
         daysInfo={daysInfo}
+        calendar={policy.calendar}
         isSubmitting={isSubmitting}
         onChange={changeRequestForm}
         onSubmit={submitRequest}

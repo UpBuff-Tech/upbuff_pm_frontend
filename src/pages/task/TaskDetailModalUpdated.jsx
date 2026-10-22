@@ -407,7 +407,7 @@ export default function TaskDetailModalUpdated({ board }) {
 
   return (
     <div className="modal fade dm-modal td-modal" id="taskDetailModal" tabIndex="-1" aria-hidden="true" aria-labelledby="taskDetailTitle">
-      <div className="modal-dialog modal-lg" role="document">
+      <div className="modal-dialog modal-xl" role="document">
         <div className="modal-content">
           <DetailHeader
             icon="bx-task"
@@ -537,7 +537,7 @@ export default function TaskDetailModalUpdated({ board }) {
                     </div>
                     <div>
                       <div className="row g-2">
-                        <div className="col-md-12">
+                        <div className="col-md-6">
                           <label className="form-label td-label">Project <span className="text-danger">*</span></label>
                           <select className="form-select form-select-sm" id="editProjectId" style={{ width: '100%' }}
                             value={formFields.editProjectId} onChange={handleFieldChange}>
@@ -546,12 +546,12 @@ export default function TaskDetailModalUpdated({ board }) {
                             ))}
                           </select>
                         </div>
-                        <div className="col-md-12">
+                        <div className="col-md-6">
                           <label className="form-label td-label">Task Name <span className="text-danger">*</span></label>
                           <input type="text" className="form-control form-control-sm" id="editTaskName"
                             value={formFields.editTaskName} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-12">
+                        <div className="col-md-4">
                           <label className="form-label td-label">Request Type</label>
                           <select className="form-select form-select-sm" id="editRequestType" style={{ width: '100%' }}
                             value={formFields.editRequestType} onChange={handleFieldChange}>
@@ -563,21 +563,21 @@ export default function TaskDetailModalUpdated({ board }) {
                             ))}
                           </select>
                         </div>
+                        <div className="col-md-4">
+                          <label className="form-label td-label">Duration (days)</label>
+                          <input className="form-control form-control-sm" id="editDuration" min="0"
+                            value={formFields.editDuration} onChange={handleFieldChange} />
+                        </div>
+                        <div className="col-md-4">
+                          <label className="form-label td-label">Responsibility</label>
+                          <input type="text" className="form-control form-control-sm" id="editResponsibility"
+                            value={formFields.editResponsibility} onChange={handleFieldChange} />
+                        </div>
                         <div className="col-md-12">
                           <label className="form-label td-label">Phase/Activity</label>
                           <textarea className="form-control form-control-sm" id="editPhase" rows="3"
                             placeholder="Enter phase/activity details..."
                             value={formFields.editPhase} onChange={handleFieldChange}></textarea>
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label td-label">Duration (days)</label>
-                          <input className="form-control form-control-sm" id="editDuration" min="0"
-                            value={formFields.editDuration} onChange={handleFieldChange} />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label td-label">Responsibility</label>
-                          <input type="text" className="form-control form-control-sm" id="editResponsibility"
-                            value={formFields.editResponsibility} onChange={handleFieldChange} />
                         </div>
                       </div>
                     </div>
@@ -622,17 +622,17 @@ export default function TaskDetailModalUpdated({ board }) {
                     </div>
                     <div>
                       <div className="row g-2">
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Planned Hours</label>
                           <input type="number" className="form-control form-control-sm" id="editPlannedHours" min="0"
                             step="any" value={formFields.editPlannedHours} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Actual Hours</label>
                           <input type="number" className="form-control form-control-sm" id="editActualHours" min="0"
                             step="any" value={formFields.editActualHours} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-12">
+                        <div className="col-md-6">
                           <label className="form-label td-label">Time Spent</label>
                           <div className="row g-1">
                             <div className="col-4">
@@ -669,22 +669,22 @@ export default function TaskDetailModalUpdated({ board }) {
                     </div>
                     <div>
                       <div className="row g-2">
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Baseline Start</label>
                           <input type="date" className="form-control form-control-sm" id="editBaselineStart"
                             value={formFields.editBaselineStart} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Baseline Finish</label>
                           <input type="date" className="form-control form-control-sm" id="editBaselineFinish"
                             value={formFields.editBaselineFinish} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Actual Start</label>
                           <input type="date" className="form-control form-control-sm" id="editActualStart"
                             value={formFields.editActualStart} onChange={handleFieldChange} />
                         </div>
-                        <div className="col-md-6">
+                        <div className="col-md-3">
                           <label className="form-label td-label">Actual Finish</label>
                           <input type="date" className="form-control form-control-sm" id="editActualFinish"
                             value={formFields.editActualFinish} onChange={handleFieldChange} />

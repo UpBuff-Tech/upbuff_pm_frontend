@@ -373,7 +373,7 @@ export default function TicketFormModal({ clients, ticketTypes, assignableUsers,
 
   return (
     <div className="modal fade" id="ticketFormModal" tabIndex="-1" aria-hidden="true">
-      <div className="modal-dialog modal-lg">
+      <div className="modal-dialog modal-xl">
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title" id="ticketFormTitle">{title}</h5>
@@ -475,7 +475,7 @@ export default function TicketFormModal({ clients, ticketTypes, assignableUsers,
                 </div>
 
                 {/* Status (only shown when editing) */}
-                <div className="col-md-6 mb-3" id="statusFieldContainer" style={showStatusField ? undefined : HIDDEN}>
+                <div className="col-md-3 mb-3" id="statusFieldContainer" style={showStatusField ? undefined : HIDDEN}>
                   <label className="form-label" htmlFor="ticketStatus">Status</label>
                   <Select2 className="form-select" id="ticketStatus" style={FULL_WIDTH}
                     placeholder="Select Status" value={form.status} onChange={handleStatusChange}>
@@ -489,7 +489,7 @@ export default function TicketFormModal({ clients, ticketTypes, assignableUsers,
                 </div>
 
                 {/* Hold Reason (only shown when On Hold) */}
-                <div className="col-md-6 mb-3" id="holdReasonContainer" style={showHoldReason ? undefined : HIDDEN}>
+                <div className="col-md-3 mb-3" id="holdReasonContainer" style={showHoldReason ? undefined : HIDDEN}>
                   <label className="form-label" htmlFor="ticketHoldReason">Hold Reason</label>
                   <input type="text" className="form-control" id="ticketHoldReason" placeholder="Reason for putting on hold"
                     value={form.holdReason} onChange={fieldChange('holdReason')} />

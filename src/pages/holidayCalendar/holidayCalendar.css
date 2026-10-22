@@ -1,0 +1,69 @@
+/* Holiday Calendar admin page (HolidayCalendarAdmin.jsx) */
+
+.hc-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.hc-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--fx-border);
+  border-radius: var(--fx-radius-lg);
+  background: var(--fx-success-soft);
+  color: var(--fx-success);
+  font-size: 0.875rem;
+}
+
+.hc-status.is-new {
+  background: var(--fx-warning-soft);
+  color: var(--fx-warning);
+}
+
+.hc-total {
+  font-weight: 600;
+  color: var(--fx-text-body);
+}
+
+.hc-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hc-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--fx-text-muted);
+}
+
+.hc-empty {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--fx-text-muted);
+  border: 1px dashed var(--fx-border-strong);
+  border-radius: var(--fx-radius);
+}
+
+.hc-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hc-inline input {
+  width: 90px;
+}

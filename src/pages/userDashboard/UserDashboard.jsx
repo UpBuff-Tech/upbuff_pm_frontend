@@ -1,7 +1,8 @@
 /**
  * My Dashboard: the personal page of an employee - today's punch status and working hours,
- * leave balance under the yearly holiday policy (fixed + optional + flexi), the optional holiday
- * picker, and a calendar with holidays, leave and attendance.
+ * my open tasks and tickets, leave balance under the yearly holiday policy (fixed + optional + flexi), the optional holiday
+ * picker, and a calendar with holidays, leave and attendance. Each user can hide the sections they
+ * do not want (Customize button); the choice is saved on the server.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,6 +11,8 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import api, { onDataChanged } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
+import MyWork from './MyWork';
+import DashboardCustomize from './DashboardCustomize';
 import './userDashboard.css';
 
 const DAY_TARGET_SECONDS = 8 * 3600;
@@ -51,6 +54,9 @@ export default function UserDashboard() {
   const [leaves, setLeaves] = useState(null); // approved + pending requests of the year
   const [, setTick] = useState(0);
 
+  // Dashboard sections the user has hidden (null until loaded from the server)
+  const [hiddenSections, setHiddenSections] = useState(null);
+
   // Optional holiday picker
   const [picked, setPicked] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -80,6 +86,9 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!userId) return undefined;
+    api.call('user.getDashboardPrefs', (err, prefs) => {
+      setHiddenSections(!err && prefs && Array.isArray(prefs.hidden) ? prefs.hidden : []);
+    });
     loadSummary();
     loadCalendar();
 
@@ -140,6 +149,22 @@ export default function UserDashboard() {
   const daysToNext = nextHoliday ? moment(nextHoliday.date).startOf('day').diff(moment().startOf('day'), 'days') : null;
   const month = summary ? summary.month : null;
 
+  /* ---- Show / hide sections ---- */
+  const show = (key) => hiddenSections !== null && !hiddenSections.includes(key);
+  const showSide = show('upcomingHolidays') || show('leaveRequests');
+
+  // Saved right away; the screen changes first and goes back if the save fails
+  const saveHiddenSections = (nextHidden) => {
+    const previous = hiddenSections;
+    setHiddenSections(nextHidden);
+    api.call('user.saveDashboardPrefs', nextHidden, (err) => {
+      if (err) {
+        toastr.error(err.reason || 'Failed to save your dashboard choices');
+        setHiddenSections(previous);
+      }
+    });
+  };
+
   /* ---- Optional holiday picker ---- */
   const todayKey = moment().format('YYYY-MM-DD');
   const allowed = calendar ? calendar.optionalAllowed : 0;
@@ -175,6 +200,7 @@ export default function UserDashboard() {
 
   /* ---- Calendar ---- */
   useEffect(() => {
+    // calendarRef is empty while the calendar section is hidden
     if (!calendar || !leaves || !calendarRef.current) return undefined;
 
     const holidayEvents = [
@@ -251,7 +277,7 @@ export default function UserDashboard() {
       instance.destroy();
       calendarApi.current = null;
     };
-  }, [calendar, leaves]);
+  }, [calendar, leaves, show('calendar')]);
 
   const firstName = (user && user.profile && user.profile.firstName) || '';
   const loading = !summary;
@@ -265,291 +291,313 @@ export default function UserDashboard() {
           <p className="text-muted mb-0">{moment().format('dddd, D MMMM YYYY')} · here&apos;s your day and your time off</p>
         </div>
         <div className="ud-header-actions">
+          {hiddenSections !== null && <DashboardCustomize hidden={hiddenSections} onChange={saveHiddenSections} />}
           <Link to="/attendance/list" className="btn btn-outline-secondary"><i className="bx bx-calendar-check me-1"></i>My attendance</Link>
           <Link to="/leaveRequest/list" className="btn btn-primary"><i className="bx bx-plus me-1"></i>Apply leave</Link>
         </div>
       </div>
 
       {/* Today tiles */}
-      <div className="row g-3 mb-3">
-        <div className="col-sm-6 col-xl-3">
-          <div className={'card h-100 ud-tile ' + (punchedIn ? 'tone-green' : punchedOut ? 'tone-indigo' : 'tone-amber')}>
-            <div className="ud-tile-head">
-              <span className="ud-tile-icon"><i className={'bx ' + (punchedIn ? 'bx-log-in-circle' : punchedOut ? 'bx-log-out-circle' : 'bx-fingerprint')}></i></span>
-              <span className="ud-tile-label">Today&apos;s attendance</span>
-              {punchedIn && <span className="ud-live"><i></i>Live</span>}
-            </div>
-            {today === null ? (
-              <span className="fx-skeleton ud-sk-value"></span>
-            ) : punchedIn ? (
-              <>
-                <div className="ud-tile-value">{formatClock(sinceIn)}</div>
-                <div className="ud-tile-note">Punched in at <strong>{moment(record.punchInTime).format('h:mm A')}</strong></div>
-              </>
-            ) : punchedOut ? (
-              <>
-                <div className="ud-tile-value">{formatHm(record.totalHours)}</div>
-                <div className="ud-tile-note">{moment(record.punchInTime).format('h:mm A')} – {moment(record.punchOutTime).format('h:mm A')}</div>
-              </>
-            ) : (
-              <>
-                <div className="ud-tile-value ud-tile-value-sm">Not punched in</div>
-                <div className="ud-tile-note">Use the fingerprint button to punch in</div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="col-sm-6 col-xl-3">
-          <div className="card h-100 ud-tile tone-indigo">
-            <div className="ud-tile-head">
-              <span className="ud-tile-icon"><i className="bx bx-time-five"></i></span>
-              <span className="ud-tile-label">Task hours today</span>
-              {taskHours && taskHours.isRunning && <span className="ud-live"><i></i>Timer on</span>}
-            </div>
-            {taskHours === null ? <span className="fx-skeleton ud-sk-value"></span> : (
-              <>
-                <div className="ud-tile-value">{formatClock(taskSeconds)}</div>
-                <div className="ud-meter"><span style={{ width: taskPercent + '%' }}></span></div>
-                <div className="ud-tile-note">{taskPercent}% of an 8h day · <Link to="/task/list">Open tasks</Link></div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="col-sm-6 col-xl-3">
-          <div className="card h-100 ud-tile tone-cyan">
-            <div className="ud-tile-head">
-              <span className="ud-tile-icon"><i className="bx bx-sun"></i></span>
-              <span className="ud-tile-label">Flexi days left</span>
-            </div>
-            {loading ? <span className="fx-skeleton ud-sk-value"></span> : (
-              <div className="ud-ring-row">
-                <span className="ud-ring" style={{ '--pct': flexiPercent }}><span>{fmtDays(balance.flexiRemaining)}</span></span>
-                <div>
-                  <div className="ud-tile-value ud-tile-value-sm">{fmtDays(balance.flexiRemaining)} of {balance.flexiTotal}</div>
-                  <div className="ud-tile-note">
-                    {fmtDays(balance.flexiUsed)} used{balance.flexiPending ? ' · ' + fmtDays(balance.flexiPending) + ' pending' : ''}
-                  </div>
-                </div>
+      {show('tiles') && (
+        <div className="row g-3 mb-3">
+          <div className="col-sm-6 col-xl-3">
+            <div className={'card h-100 ud-tile ' + (punchedIn ? 'tone-green' : punchedOut ? 'tone-indigo' : 'tone-amber')}>
+              <div className="ud-tile-head">
+                <span className="ud-tile-icon"><i className={'bx ' + (punchedIn ? 'bx-log-in-circle' : punchedOut ? 'bx-log-out-circle' : 'bx-fingerprint')}></i></span>
+                <span className="ud-tile-label">Today&apos;s attendance</span>
+                {punchedIn && <span className="ud-live"><i></i>Live</span>}
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className="col-sm-6 col-xl-3">
-          <div className="card h-100 ud-tile tone-rose">
-            <div className="ud-tile-head">
-              <span className="ud-tile-icon"><i className="bx bx-calendar-star"></i></span>
-              <span className="ud-tile-label">Next holiday</span>
-            </div>
-            {loading ? <span className="fx-skeleton ud-sk-value"></span> : nextHoliday ? (
-              <>
-                <div className="ud-tile-value ud-tile-value-sm">{nextHoliday.name}</div>
-                <div className="ud-tile-note">
-                  {moment(nextHoliday.date).format('ddd, D MMM')} ·{' '}
-                  <strong>{daysToNext === 0 ? 'today 🎉' : daysToNext === 1 ? 'tomorrow' : `in ${daysToNext} days`}</strong>
-                  {nextHoliday.kind === 'optional' && <span className="ud-tag">Optional</span>}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="ud-tile-value ud-tile-value-sm">No more this year</div>
-                <div className="ud-tile-note">Plan with your flexi days</div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Balance + optional picker */}
-      <div className="row g-3 mb-3">
-        <div className="col-xl-5">
-          <div className="card h-100 ud-card">
-            <div className="ud-card-head">
-              <div>
-                <h5>Time off {year}</h5>
-                <p>{balance ? balance.totalPaidDaysOff : 22} paid days off: fixed + optional + flexi</p>
-              </div>
-            </div>
-            {loading ? (
-              <div className="ud-card-body">{[0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)}</div>
-            ) : (
-              <div className="ud-card-body ud-balance">
-                <BalanceRow tone="rose" icon="bx-buildings" title="Fixed holidays" detail="Office closed · no action needed"
-                  segments={[{ value: balance.fixedPassed, label: 'passed' }]} total={balance.fixedTotal}
-                  right={`${balance.fixedTotal - balance.fixedPassed} to go`} />
-                <BalanceRow tone="violet" icon="bx-star" title="Optional holidays" detail={`Pick any ${balance.optionalAllowed} from the list`}
-                  segments={[{ value: balance.optionalPassed, label: 'taken' }, { value: balance.optionalSelected - balance.optionalPassed, label: 'planned', soft: true }]}
-                  total={balance.optionalAllowed}
-                  right={`${balance.optionalSelected} of ${balance.optionalAllowed} chosen`} />
-                <BalanceRow tone="cyan" icon="bx-sun" title="Flexi-holidays" detail="Sick + paid leave, any reason"
-                  segments={[{ value: balance.flexiUsed, label: 'used' }, { value: balance.flexiPending, label: 'pending', soft: true }]}
-                  total={balance.flexiTotal}
-                  right={`${fmtDays(balance.flexiRemaining)} left`} />
-
-                <div className="ud-month">
-                  <div className="ud-month-title">This month</div>
-                  <div className="ud-month-stats">
-                    <span><strong>{month.presentDays}<em>/{month.workingDays}</em></strong><small>days present</small></span>
-                    <span><strong>{month.lateCount}</strong><small>late arrivals</small></span>
-                    <span><strong>{month.avgSeconds ? formatHm(month.avgSeconds) : '–'}</strong><small>avg per day</small></span>
-                    <span><strong>{fmtDays(balance.wfhDays)}</strong><small>WFH days this year</small></span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="col-xl-7">
-          <div className="card h-100 ud-card">
-            <div className="ud-card-head">
-              <div>
-                <h5>Choose your optional holidays</h5>
-                <p>Pick any {allowed || 4} of the {calendar ? calendar.optional.length : 7} dates · passed dates are locked</p>
-              </div>
-              <span className={'ud-pick-count' + (picked.length === allowed ? ' is-full' : '')}>{picked.length}/{allowed || 4} chosen</span>
-            </div>
-            <div className="ud-card-body">
-              {!calendar ? (
-                [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)
-              ) : !calendar.defined ? (
-                <div className="ud-empty">No holiday calendar has been set up for {year} yet.</div>
+              {today === null ? (
+                <span className="fx-skeleton ud-sk-value"></span>
+              ) : punchedIn ? (
+                <>
+                  <div className="ud-tile-value">{formatClock(sinceIn)}</div>
+                  <div className="ud-tile-note">Punched in at <strong>{moment(record.punchInTime).format('h:mm A')}</strong></div>
+                </>
+              ) : punchedOut ? (
+                <>
+                  <div className="ud-tile-value">{formatHm(record.totalHours)}</div>
+                  <div className="ud-tile-note">{moment(record.punchInTime).format('h:mm A')} – {moment(record.punchOutTime).format('h:mm A')}</div>
+                </>
               ) : (
                 <>
-                  <div className="ud-picks">
-                    {calendar.optional.map((h) => {
-                      const isPicked = picked.includes(h.date);
-                      const passed = h.date < todayKey;
-                      const blocked = !isPicked && picked.length >= allowed;
-                      return (
-                        <button key={h.date} type="button" disabled={passed}
-                          className={'ud-pick' + (isPicked ? ' is-picked' : '') + (passed ? ' is-passed' : '') + (blocked ? ' is-blocked' : '')}
-                          onClick={() => togglePick(h.date)} aria-pressed={isPicked}>
-                          <span className="ud-pick-date">
-                            <strong>{moment(h.date).format('DD')}</strong>
-                            <small>{moment(h.date).format('MMM')}</small>
-                          </span>
-                          <span className="ud-pick-text">
-                            <strong>{h.name}</strong>
-                            <small>{h.day}{passed ? ' · passed' : ''}</small>
-                          </span>
-                          <span className="ud-pick-check"><i className={'bx ' + (isPicked ? 'bx-check' : passed ? 'bx-lock-alt' : 'bx-plus')}></i></span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="ud-pick-actions">
-                    <span className="text-muted small">
-                      {dirty ? 'You have unsaved changes' : savedSelection.length ? 'Saved ✓' : 'Nothing chosen yet'}
-                    </span>
-                    <div className="d-flex gap-2">
-                      {dirty && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setPicked(savedSelection)} disabled={saving}>Reset</button>}
-                      <button type="button" className="btn btn-sm btn-primary" onClick={savePicks} disabled={!dirty || saving}>
-                        {saving ? <><span className="spinner-border spinner-border-sm me-1"></span>Saving…</> : <><i className="bx bx-save me-1"></i>Save choices</>}
-                      </button>
+                  <div className="ud-tile-value ud-tile-value-sm">Not punched in</div>
+                  <div className="ud-tile-note">Use the fingerprint button to punch in</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-xl-3">
+            <div className="card h-100 ud-tile tone-indigo">
+              <div className="ud-tile-head">
+                <span className="ud-tile-icon"><i className="bx bx-time-five"></i></span>
+                <span className="ud-tile-label">Task hours today</span>
+                {taskHours && taskHours.isRunning && <span className="ud-live"><i></i>Timer on</span>}
+              </div>
+              {taskHours === null ? <span className="fx-skeleton ud-sk-value"></span> : (
+                <>
+                  <div className="ud-tile-value">{formatClock(taskSeconds)}</div>
+                  <div className="ud-meter"><span style={{ width: taskPercent + '%' }}></span></div>
+                  <div className="ud-tile-note">{taskPercent}% of an 8h day · <Link to="/task/list">Open tasks</Link></div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-xl-3">
+            <div className="card h-100 ud-tile tone-cyan">
+              <div className="ud-tile-head">
+                <span className="ud-tile-icon"><i className="bx bx-sun"></i></span>
+                <span className="ud-tile-label">Flexi days left</span>
+              </div>
+              {loading ? <span className="fx-skeleton ud-sk-value"></span> : (
+                <div className="ud-ring-row">
+                  <span className="ud-ring" style={{ '--pct': flexiPercent }}><span>{fmtDays(balance.flexiRemaining)}</span></span>
+                  <div>
+                    <div className="ud-tile-value ud-tile-value-sm">{fmtDays(balance.flexiRemaining)} of {balance.flexiTotal}</div>
+                    <div className="ud-tile-note">
+                      {fmtDays(balance.flexiUsed)} used{balance.flexiPending ? ' · ' + fmtDays(balance.flexiPending) + ' pending' : ''}
                     </div>
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-xl-3">
+            <div className="card h-100 ud-tile tone-rose">
+              <div className="ud-tile-head">
+                <span className="ud-tile-icon"><i className="bx bx-calendar-star"></i></span>
+                <span className="ud-tile-label">Next holiday</span>
+              </div>
+              {loading ? <span className="fx-skeleton ud-sk-value"></span> : nextHoliday ? (
+                <>
+                  <div className="ud-tile-value ud-tile-value-sm">{nextHoliday.name}</div>
+                  <div className="ud-tile-note">
+                    {moment(nextHoliday.date).format('ddd, D MMM')} ·{' '}
+                    <strong>{daysToNext === 0 ? 'today 🎉' : daysToNext === 1 ? 'tomorrow' : `in ${daysToNext} days`}</strong>
+                    {nextHoliday.kind === 'optional' && <span className="ud-tag">Optional</span>}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="ud-tile-value ud-tile-value-sm">No more this year</div>
+                  <div className="ud-tile-note">Plan with your flexi days</div>
                 </>
               )}
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* My work today: open tasks + tickets assigned to me */}
+      {show('myWork') && <MyWork />}
+
+      {/* Balance + optional picker */}
+      {(show('timeOff') || show('optionalHolidays')) && (
+        <div className="row g-3 mb-3">
+          {show('timeOff') && (
+            <div className={show('optionalHolidays') ? 'col-xl-5' : 'col-12'}>
+              <div className="card h-100 ud-card">
+                <div className="ud-card-head">
+                  <div>
+                    <h5>Time off {year}</h5>
+                    <p>{balance ? balance.totalPaidDaysOff : 22} paid days off: fixed + optional + flexi</p>
+                  </div>
+                </div>
+                {loading ? (
+                  <div className="ud-card-body">{[0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)}</div>
+                ) : (
+                  <div className="ud-card-body ud-balance">
+                    <BalanceRow tone="rose" icon="bx-buildings" title="Fixed holidays" detail="Office closed · no action needed"
+                      segments={[{ value: balance.fixedPassed, label: 'passed' }]} total={balance.fixedTotal}
+                      right={`${balance.fixedTotal - balance.fixedPassed} to go`} />
+                    <BalanceRow tone="violet" icon="bx-star" title="Optional holidays" detail={`Pick any ${balance.optionalAllowed} from the list`}
+                      segments={[{ value: balance.optionalPassed, label: 'taken' }, { value: balance.optionalSelected - balance.optionalPassed, label: 'planned', soft: true }]}
+                      total={balance.optionalAllowed}
+                      right={`${balance.optionalSelected} of ${balance.optionalAllowed} chosen`} />
+                    <BalanceRow tone="cyan" icon="bx-sun" title="Flexi-holidays" detail="Sick + paid leave, any reason"
+                      segments={[{ value: balance.flexiUsed, label: 'used' }, { value: balance.flexiPending, label: 'pending', soft: true }]}
+                      total={balance.flexiTotal}
+                      right={`${fmtDays(balance.flexiRemaining)} left`} />
+
+                    <div className="ud-month">
+                      <div className="ud-month-title">This month</div>
+                      <div className="ud-month-stats">
+                        <span><strong>{month.presentDays}<em>/{month.workingDays}</em></strong><small>days present</small></span>
+                        <span><strong>{month.lateCount}</strong><small>late arrivals</small></span>
+                        <span><strong>{month.avgSeconds ? formatHm(month.avgSeconds) : '–'}</strong><small>avg per day</small></span>
+                        <span><strong>{fmtDays(balance.wfhDays)}</strong><small>WFH days this year</small></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {show('optionalHolidays') && (
+            <div className={show('timeOff') ? 'col-xl-7' : 'col-12'}>
+              <div className="card h-100 ud-card">
+                <div className="ud-card-head">
+                  <div>
+                    <h5>Choose your optional holidays</h5>
+                    <p>Pick any {allowed || 4} of the {calendar ? calendar.optional.length : 7} dates · passed dates are locked</p>
+                  </div>
+                  <span className={'ud-pick-count' + (picked.length === allowed ? ' is-full' : '')}>{picked.length}/{allowed || 4} chosen</span>
+                </div>
+                <div className="ud-card-body">
+                  {!calendar ? (
+                    [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)
+                  ) : !calendar.defined ? (
+                    <div className="ud-empty">No holiday calendar has been set up for {year} yet.</div>
+                  ) : (
+                    <>
+                      <div className="ud-picks">
+                        {calendar.optional.map((h) => {
+                          const isPicked = picked.includes(h.date);
+                          const passed = h.date < todayKey;
+                          const blocked = !isPicked && picked.length >= allowed;
+                          return (
+                            <button key={h.date} type="button" disabled={passed}
+                              className={'ud-pick' + (isPicked ? ' is-picked' : '') + (passed ? ' is-passed' : '') + (blocked ? ' is-blocked' : '')}
+                              onClick={() => togglePick(h.date)} aria-pressed={isPicked}>
+                              <span className="ud-pick-date">
+                                <strong>{moment(h.date).format('DD')}</strong>
+                                <small>{moment(h.date).format('MMM')}</small>
+                              </span>
+                              <span className="ud-pick-text">
+                                <strong>{h.name}</strong>
+                                <small>{h.day}{passed ? ' · passed' : ''}</small>
+                              </span>
+                              <span className="ud-pick-check"><i className={'bx ' + (isPicked ? 'bx-check' : passed ? 'bx-lock-alt' : 'bx-plus')}></i></span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="ud-pick-actions">
+                        <span className="text-muted small">
+                          {dirty ? 'You have unsaved changes' : savedSelection.length ? 'Saved ✓' : 'Nothing chosen yet'}
+                        </span>
+                        <div className="d-flex gap-2">
+                          {dirty && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setPicked(savedSelection)} disabled={saving}>Reset</button>}
+                          <button type="button" className="btn btn-sm btn-primary" onClick={savePicks} disabled={!dirty || saving}>
+                            {saving ? <><span className="spinner-border spinner-border-sm me-1"></span>Saving…</> : <><i className="bx bx-save me-1"></i>Save choices</>}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Calendar + side lists */}
-      <div className="row g-3">
-        <div className="col-xl-8">
-          <div className="card ud-card">
-            <div className="ud-card-head">
-              <div>
-                <h5>My calendar</h5>
-                <p>Holidays, leave and attendance in one place</p>
+      {(show('calendar') || showSide) && (
+        <div className="row g-3">
+          {show('calendar') && (
+            <div className={showSide ? 'col-xl-8' : 'col-12'}>
+              <div className="card ud-card">
+                <div className="ud-card-head">
+                  <div>
+                    <h5>My calendar</h5>
+                    <p>Holidays, leave and attendance in one place</p>
+                  </div>
+                </div>
+                <div className="ud-legend">
+                  <span className="ud-chip ud-c-fixed"><i></i>Holiday</span>
+                  <span className="ud-chip ud-c-optional-chosen"><i></i>My optional</span>
+                  <span className="ud-chip ud-c-optional"><i></i>Optional (not chosen)</span>
+                  <span className="ud-chip ud-c-leave"><i></i>Leave</span>
+                  <span className="ud-chip ud-c-wfh"><i></i>WFH</span>
+                  <span className="ud-chip ud-c-pending"><i></i>Pending</span>
+                  <span className="ud-chip ud-c-present"><i></i>Attendance</span>
+                </div>
+                <div className="ud-card-body">
+                  {(!calendar || !leaves) && <span className="fx-skeleton ud-sk-calendar"></span>}
+                  <div ref={calendarRef} className="ud-calendar"></div>
+                </div>
               </div>
             </div>
-            <div className="ud-legend">
-              <span className="ud-chip ud-c-fixed"><i></i>Holiday</span>
-              <span className="ud-chip ud-c-optional-chosen"><i></i>My optional</span>
-              <span className="ud-chip ud-c-optional"><i></i>Optional (not chosen)</span>
-              <span className="ud-chip ud-c-leave"><i></i>Leave</span>
-              <span className="ud-chip ud-c-wfh"><i></i>WFH</span>
-              <span className="ud-chip ud-c-pending"><i></i>Pending</span>
-              <span className="ud-chip ud-c-present"><i></i>Attendance</span>
-            </div>
-            <div className="ud-card-body">
-              {(!calendar || !leaves) && <span className="fx-skeleton ud-sk-calendar"></span>}
-              <div ref={calendarRef} className="ud-calendar"></div>
-            </div>
-          </div>
-        </div>
+          )}
 
-        <div className="col-xl-4 d-flex flex-column gap-3">
-          <div className="card ud-card">
-            <div className="ud-card-head">
-              <div>
-                <h5>Upcoming holidays</h5>
-                <p>Fixed holidays and your optional picks</p>
-              </div>
-            </div>
-            <div className="ud-card-body pt-0">
-              {loading ? [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>) : upcoming.length === 0 ? (
-                <div className="ud-empty">No more holidays this year.</div>
-              ) : (
-                <ul className="ud-list">
-                  {upcoming.slice(0, 6).map((h) => {
-                    const inDays = moment(h.date).startOf('day').diff(moment().startOf('day'), 'days');
-                    return (
-                      <li key={h.date} className="ud-holiday-item">
-                        <span className={'ud-date-badge ' + (h.kind === 'optional' ? 'is-optional' : '')}>
-                          <strong>{moment(h.date).format('DD')}</strong><small>{moment(h.date).format('MMM')}</small>
-                        </span>
-                        <span className="ud-holiday-text">
-                          <strong>{h.name}</strong>
-                          <small>{moment(h.date).format('dddd')}{h.kind === 'optional' ? ' · optional' : ''}</small>
-                        </span>
-                        <span className="ud-in">{inDays === 0 ? 'Today' : inDays === 1 ? 'Tomorrow' : inDays + 'd'}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
+          {showSide && (
+            <div className={(show('calendar') ? 'col-xl-4' : 'col-12') + ' d-flex flex-column gap-3'}>
+              {show('upcomingHolidays') && (
+                <div className="card ud-card">
+                  <div className="ud-card-head">
+                    <div>
+                      <h5>Upcoming holidays</h5>
+                      <p>Fixed holidays and your optional picks</p>
+                    </div>
+                  </div>
+                  <div className="ud-card-body pt-0">
+                    {loading ? [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>) : upcoming.length === 0 ? (
+                      <div className="ud-empty">No more holidays this year.</div>
+                    ) : (
+                      <ul className="ud-list">
+                        {upcoming.slice(0, 6).map((h) => {
+                          const inDays = moment(h.date).startOf('day').diff(moment().startOf('day'), 'days');
+                          return (
+                            <li key={h.date} className="ud-holiday-item">
+                              <span className={'ud-date-badge ' + (h.kind === 'optional' ? 'is-optional' : '')}>
+                                <strong>{moment(h.date).format('DD')}</strong><small>{moment(h.date).format('MMM')}</small>
+                              </span>
+                              <span className="ud-holiday-text">
+                                <strong>{h.name}</strong>
+                                <small>{moment(h.date).format('dddd')}{h.kind === 'optional' ? ' · optional' : ''}</small>
+                              </span>
+                              <span className="ud-in">{inDays === 0 ? 'Today' : inDays === 1 ? 'Tomorrow' : inDays + 'd'}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {show('leaveRequests') && (
+                <div className="card ud-card">
+                  <div className="ud-card-head">
+                    <div>
+                      <h5>My leave requests</h5>
+                      <p>Latest 5</p>
+                    </div>
+                    <Link to="/leaveRequest/list" className="ud-link">View all</Link>
+                  </div>
+                  <div className="ud-card-body pt-0">
+                    {loading ? [0, 1].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>) : summary.recentRequests.length === 0 ? (
+                      <div className="ud-empty">No leave requests yet.</div>
+                    ) : (
+                      <ul className="ud-list">
+                        {summary.recentRequests.map((r) => (
+                          <li key={r._id} className="ud-request">
+                            <span className={'ud-request-icon t-' + r.type}><i className={'bx ' + (r.type === 'wfh' ? 'bx-home-alt' : r.type === 'optional' ? 'bx-star' : 'bx-sun')}></i></span>
+                            <span className="ud-request-text">
+                              <strong>{LEAVE_TYPE_LABELS[r.type] || r.type}{r.dayType === 'half' ? ' · half day' : ''}</strong>
+                              <small>
+                                {moment(r.fromDate).format('D MMM')}
+                                {moment(r.toDate).isSame(r.fromDate, 'day') ? '' : ' – ' + moment(r.toDate).format('D MMM')}
+                                {r.totalDays ? ' · ' + fmtDays(r.totalDays) + 'd' : ''}
+                              </small>
+                            </span>
+                            <span className={'ud-status s-' + r.status}>{r.status}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-
-          <div className="card ud-card">
-            <div className="ud-card-head">
-              <div>
-                <h5>My leave requests</h5>
-                <p>Latest 5</p>
-              </div>
-              <Link to="/leaveRequest/list" className="ud-link">View all</Link>
-            </div>
-            <div className="ud-card-body pt-0">
-              {loading ? [0, 1].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>) : summary.recentRequests.length === 0 ? (
-                <div className="ud-empty">No leave requests yet.</div>
-              ) : (
-                <ul className="ud-list">
-                  {summary.recentRequests.map((r) => (
-                    <li key={r._id} className="ud-request">
-                      <span className={'ud-request-icon t-' + r.type}><i className={'bx ' + (r.type === 'wfh' ? 'bx-home-alt' : r.type === 'optional' ? 'bx-star' : 'bx-sun')}></i></span>
-                      <span className="ud-request-text">
-                        <strong>{LEAVE_TYPE_LABELS[r.type] || r.type}{r.dayType === 'half' ? ' · half day' : ''}</strong>
-                        <small>
-                          {moment(r.fromDate).format('D MMM')}
-                          {moment(r.toDate).isSame(r.fromDate, 'day') ? '' : ' – ' + moment(r.toDate).format('D MMM')}
-                          {r.totalDays ? ' · ' + fmtDays(r.totalDays) + 'd' : ''}
-                        </small>
-                      </span>
-                      <span className={'ud-status s-' + r.status}>{r.status}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

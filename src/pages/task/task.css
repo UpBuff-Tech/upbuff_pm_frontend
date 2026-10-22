@@ -511,8 +511,9 @@ body.kanban-dragging .kanban-empty {
   font-variant-numeric: tabular-nums;
 }
 
-/* Priority: a pill-shaped select with a coloured dot */
-.task-priority-select {
+/* Priority and status: pill-shaped selects with a coloured dot */
+.task-priority-select,
+.task-status-select {
   --p: #64748b;
   appearance: none;
   -webkit-appearance: none;
@@ -531,7 +532,9 @@ body.kanban-dragging .kanban-empty {
 }
 
 .task-priority-select:hover,
-.task-priority-select:focus {
+.task-priority-select:focus,
+.task-status-select:hover,
+.task-status-select:focus {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--p) 30%, transparent);
 }
@@ -541,7 +544,22 @@ body.kanban-dragging .kanban-empty {
 .task-priority-select[data-priority="Medium"] { --p: #0284c7; }
 .task-priority-select[data-priority="Low"] { --p: #64748b; }
 
-.task-priority-select option {
+.task-status-select[data-status="Pending"] { --p: #d97706; }
+.task-status-select[data-status="In Progress"] { --p: #4f46e5; }
+.task-status-select[data-status="On Hold"] { --p: #64748b; }
+.task-status-select[data-status="Testing"] { --p: #0891b2; }
+.task-status-select[data-status="Completed"] { --p: #16a34a; }
+
+/* The status and priority selects side by side, right of the task id */
+.tc-selects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.task-priority-select option,
+.task-status-select option {
   background: #fff;
   color: var(--fx-text);
 }

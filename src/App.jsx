@@ -24,6 +24,7 @@ const EmployeeTaskReport = lazy(() => import('./pages/employeeTaskReport/Employe
 const ClientTaskReport = lazy(() => import('./pages/clientTaskReport/ClientTaskReport'));
 const Ticket = lazy(() => import('./pages/ticket/Ticket'));
 const TicketTypes = lazy(() => import('./pages/ticketTypes/TicketTypes'));
+const HolidayCalendarAdmin = lazy(() => import('./pages/holidayCalendar/HolidayCalendarAdmin'));
 const Templates = lazy(() => import('./pages/templates/Templates'));
 const GanttChart = lazy(() => import('./pages/ganttChart/GanttChart'));
 const DocumentRepository = lazy(() => import('./pages/documentRepository/DocumentRepository'));
@@ -146,6 +147,7 @@ export default function App() {
         <Route path="/clientTaskReport/list" element={secure(<ClientTaskReport />)} />
         <Route path="/ticket/list" element={secure(<Ticket />)} />
         <Route path="/ticketTypes/list" element={secure(<TicketTypes />)} />
+        <Route path="/holidays/manage" element={secure(<HolidayCalendarAdmin />)} />
         <Route path="/templates/list" element={secure(<Templates />)} />
         <Route path="/ganttChart/view" element={secure(<GanttChart />)} />
         <Route path="/documentRepository/view" element={secure(<DocumentRepository />)} />
