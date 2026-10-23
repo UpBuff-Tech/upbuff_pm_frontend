@@ -803,7 +803,8 @@ textarea.form-control { min-height: 80px; }
 }
 
 /* ---------------------------------------------------------------------------
-   Toastr: light cards with a coloured icon, instead of solid colour blocks
+   Toastr: "rich" toasts - a card tinted in the message's colour, a solid icon circle,
+   slide-in animation and a thin progress line. Options are set once in main.jsx.
    ------------------------------------------------------------------------- */
 #toast-container {
   --fx-toast-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
@@ -811,84 +812,129 @@ textarea.form-control { min-height: 80px; }
   --fx-toast-bang: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M12 6v8M12 18.5v.01'/%3E%3C/svg%3E");
   --fx-toast-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M12 11v7M12 6.5v.01'/%3E%3C/svg%3E");
 }
+#toast-container.toast-top-right {
+  top: 16px;
+  right: 16px;
+}
 #toast-container > div {
   --fx-accent: var(--fx-info);
   position: relative;
-  width: 360px;
+  width: 380px;
   max-width: calc(100vw - 32px);
   min-height: 0;
-  padding: 14px 40px 14px 58px !important;
-  border: 1px solid var(--fx-border);
-  border-radius: 12px !important;
-  background: var(--fx-surface) !important;
+  margin: 0 0 10px;
+  padding: 14px 44px 16px 60px !important;
+  border: 1px solid color-mix(in srgb, var(--fx-accent) 22%, transparent);
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--fx-accent) 6%, #fff) !important;
   background-image: none !important;
   color: var(--fx-text) !important;
-  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.25), 0 2px 6px rgba(15, 23, 42, 0.05) !important;
   opacity: 1 !important;
   overflow: hidden;
   font-family: var(--bs-body-font-family);
+  animation: fx-toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-#toast-container > div:hover { box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.28) !important; }
+#toast-container > div:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.32), 0 2px 6px rgba(15, 23, 42, 0.06) !important;
+}
 #toast-container > .toast-success { --fx-accent: var(--fx-success); --fx-toast-icon: var(--fx-toast-check); }
 #toast-container > .toast-error { --fx-accent: var(--fx-danger); --fx-toast-icon: var(--fx-toast-x); }
 #toast-container > .toast-warning { --fx-accent: var(--fx-warning); --fx-toast-icon: var(--fx-toast-bang); }
 #toast-container > .toast-info { --fx-accent: var(--fx-info); --fx-toast-icon: var(--fx-toast-info); }
+/* toastr's own icon images (set per type, so they need a rule just as specific to be removed) */
+#toast-container > .toast-success,
+#toast-container > .toast-error,
+#toast-container > .toast-warning,
+#toast-container > .toast-info {
+  background-image: none !important;
+}
 
-/* Icon badge: tinted circle + glyph */
+@keyframes fx-toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #toast-container > div { animation: none; }
+}
+
+/* Icon: solid circle in the message colour with a white glyph */
 #toast-container > div::before,
 #toast-container > div::after {
   content: '';
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 14px;
   border-radius: 50%;
 }
 #toast-container > div::before {
-  left: 14px;
+  left: 16px;
   width: 30px;
   height: 30px;
-  background: color-mix(in srgb, var(--fx-accent) 14%, transparent);
+  background: var(--fx-accent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--fx-accent) 35%, transparent);
 }
 #toast-container > div::after {
-  left: 21px;
+  top: 21px;
+  left: 23px;
   width: 16px;
   height: 16px;
   border-radius: 0;
-  background: var(--fx-accent);
+  background: #fff;
   -webkit-mask: var(--fx-toast-icon, var(--fx-toast-info)) center / contain no-repeat;
   mask: var(--fx-toast-icon, var(--fx-toast-info)) center / contain no-repeat;
 }
 #toast-container .toast-title {
   margin-bottom: 2px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--fx-text) !important;
 }
+/* A message alone reads as the headline; under a title it is the description */
 #toast-container .toast-message {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1.45;
+  padding-top: 5px;
+  font-size: 0.875rem;
+  font-weight: 550;
+  line-height: 1.4;
   color: var(--fx-text) !important;
 }
 #toast-container .toast-title + .toast-message {
+  padding-top: 0;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--fx-text-muted) !important;
 }
 #toast-container .toast-close-button {
   position: absolute;
-  top: 50%;
+  top: 12px;
   right: 12px;
-  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   color: var(--fx-text-subtle);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1;
   text-shadow: none;
   opacity: 1;
-  font-weight: 400;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
-#toast-container .toast-close-button:hover { color: var(--fx-text); }
+#toast-container .toast-close-button:hover {
+  background: color-mix(in srgb, var(--fx-accent) 12%, transparent);
+  color: var(--fx-text);
+}
 #toast-container .toast-progress {
   height: 3px;
   background: var(--fx-accent);
-  opacity: 0.6;
+  opacity: 0.45;
+}
+@media (max-width: 575.98px) {
+  #toast-container.toast-top-right { left: 12px; right: 12px; }
+  #toast-container > div { width: auto; }
 }
 
 /* ---------------------------------------------------------------------------
