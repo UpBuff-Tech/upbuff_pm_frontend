@@ -12,6 +12,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import api, { onDataChanged } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import MyWork from './MyWork';
+import MyWeek from './MyWeek';
+import TeamToday from './TeamToday';
 import DashboardCustomize from './DashboardCustomize';
 import './userDashboard.css';
 
@@ -151,7 +153,10 @@ export default function UserDashboard() {
 
   /* ---- Show / hide sections ---- */
   const show = (key) => hiddenSections !== null && !hiddenSections.includes(key);
-  const showSide = show('upcomingHolidays') || show('leaveRequests');
+  // Two columns: the main one (my work, calendar) and a narrower side one (time off, holidays,
+  // leave). A column with nothing to show is left out and the other one takes the full width.
+  const showMain = show('myWork') || show('calendar') || show('myWeek') || show('teamToday');
+  const showSide = show('timeOff') || show('optionalHolidays') || show('upcomingHolidays') || show('leaveRequests');
 
   // Saved right away; the screen changes first and goes back if the save fails
   const saveHiddenSections = (nextHidden) => {
@@ -284,11 +289,12 @@ export default function UserDashboard() {
 
   return (
     <div className="container-xxl flex-grow-1 container-p-y ud-page">
-      {/* Header */}
-      <div className="ud-header">
-        <div>
-          <h4 className="fw-bold mb-1">{greeting()}{firstName ? ', ' + firstName : ''} 👋</h4>
-          <p className="text-muted mb-0">{moment().format('dddd, D MMMM YYYY')} · here&apos;s your day and your time off</p>
+      {/* Header: greeting banner with the page actions */}
+      <div className="ud-hero">
+        <div className="ud-hero-text">
+          <span className="ud-hero-date"><i className="bx bx-calendar"></i>{moment().format('dddd, D MMMM YYYY')}</span>
+          <h4>{greeting()}{firstName ? ', ' + firstName : ''} 👋</h4>
+          <p>Here&apos;s your day, your work and your time off.</p>
         </div>
         <div className="ud-header-actions">
           {hiddenSections !== null && <DashboardCustomize hidden={hiddenSections} onChange={saveHiddenSections} />}
@@ -391,145 +397,154 @@ export default function UserDashboard() {
         </div>
       )}
 
-      {/* My work today: open tasks + tickets assigned to me */}
-      {show('myWork') && <MyWork />}
+      {/* Main column (my work, calendar) + side column (time off, holidays, leave) */}
+      {(showMain || showSide) && (
+        <div className="row g-3">
+          {showMain && (
+            <div className={(showSide ? 'col-xl-8' : 'col-12') + ' ud-col'}>
+              {/* My work today: open tasks + tickets assigned to me */}
+              {show('myWork') && <MyWork />}
 
-      {/* Balance + optional picker */}
-      {(show('timeOff') || show('optionalHolidays')) && (
-        <div className="row g-3 mb-3">
-          {show('timeOff') && (
-            <div className={show('optionalHolidays') ? 'col-xl-5' : 'col-12'}>
-              <div className="card h-100 ud-card">
-                <div className="ud-card-head">
-                  <div>
-                    <h5>Time off {year}</h5>
-                    <p>{balance ? balance.totalPaidDaysOff : 22} paid days off: fixed + optional + flexi</p>
-                  </div>
-                </div>
-                {loading ? (
-                  <div className="ud-card-body">{[0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)}</div>
-                ) : (
-                  <div className="ud-card-body ud-balance">
-                    <BalanceRow tone="rose" icon="bx-buildings" title="Fixed holidays" detail="Office closed · no action needed"
-                      segments={[{ value: balance.fixedPassed, label: 'passed' }]} total={balance.fixedTotal}
-                      right={`${balance.fixedTotal - balance.fixedPassed} to go`} />
-                    <BalanceRow tone="violet" icon="bx-star" title="Optional holidays" detail={`Pick any ${balance.optionalAllowed} from the list`}
-                      segments={[{ value: balance.optionalPassed, label: 'taken' }, { value: balance.optionalSelected - balance.optionalPassed, label: 'planned', soft: true }]}
-                      total={balance.optionalAllowed}
-                      right={`${balance.optionalSelected} of ${balance.optionalAllowed} chosen`} />
-                    <BalanceRow tone="cyan" icon="bx-sun" title="Flexi-holidays" detail="Sick + paid leave, any reason"
-                      segments={[{ value: balance.flexiUsed, label: 'used' }, { value: balance.flexiPending, label: 'pending', soft: true }]}
-                      total={balance.flexiTotal}
-                      right={`${fmtDays(balance.flexiRemaining)} left`} />
-
-                    <div className="ud-month">
-                      <div className="ud-month-title">This month</div>
-                      <div className="ud-month-stats">
-                        <span><strong>{month.presentDays}<em>/{month.workingDays}</em></strong><small>days present</small></span>
-                        <span><strong>{month.lateCount}</strong><small>late arrivals</small></span>
-                        <span><strong>{month.avgSeconds ? formatHm(month.avgSeconds) : '–'}</strong><small>avg per day</small></span>
-                        <span><strong>{fmtDays(balance.wfhDays)}</strong><small>WFH days this year</small></span>
-                      </div>
+              {show('calendar') && (
+                <div className="card ud-card">
+                  <div className="ud-card-head">
+                    <span className="ud-card-icon tone-indigo"><i className="bx bx-calendar"></i></span>
+                    <div>
+                      <h5>My calendar</h5>
+                      <p>Holidays, leave and attendance in one place</p>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {show('optionalHolidays') && (
-            <div className={show('timeOff') ? 'col-xl-7' : 'col-12'}>
-              <div className="card h-100 ud-card">
-                <div className="ud-card-head">
-                  <div>
-                    <h5>Choose your optional holidays</h5>
-                    <p>Pick any {allowed || 4} of the {calendar ? calendar.optional.length : 7} dates · passed dates are locked</p>
+                  <div className="ud-legend">
+                    <span className="ud-chip ud-c-fixed"><i></i>Holiday</span>
+                    <span className="ud-chip ud-c-optional-chosen"><i></i>My optional</span>
+                    <span className="ud-chip ud-c-optional"><i></i>Optional (not chosen)</span>
+                    <span className="ud-chip ud-c-leave"><i></i>Leave</span>
+                    <span className="ud-chip ud-c-wfh"><i></i>WFH</span>
+                    <span className="ud-chip ud-c-pending"><i></i>Pending</span>
+                    <span className="ud-chip ud-c-present"><i></i>Attendance</span>
                   </div>
-                  <span className={'ud-pick-count' + (picked.length === allowed ? ' is-full' : '')}>{picked.length}/{allowed || 4} chosen</span>
+                  <div className="ud-card-body">
+                    {(!calendar || !leaves) && <span className="fx-skeleton ud-sk-calendar"></span>}
+                    <div ref={calendarRef} className="ud-calendar"></div>
+                  </div>
                 </div>
-                <div className="ud-card-body">
-                  {!calendar ? (
-                    [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)
-                  ) : !calendar.defined ? (
-                    <div className="ud-empty">No holiday calendar has been set up for {year} yet.</div>
-                  ) : (
-                    <>
-                      <div className="ud-picks">
-                        {calendar.optional.map((h) => {
-                          const isPicked = picked.includes(h.date);
-                          const passed = h.date < todayKey;
-                          const blocked = !isPicked && picked.length >= allowed;
-                          return (
-                            <button key={h.date} type="button" disabled={passed}
-                              className={'ud-pick' + (isPicked ? ' is-picked' : '') + (passed ? ' is-passed' : '') + (blocked ? ' is-blocked' : '')}
-                              onClick={() => togglePick(h.date)} aria-pressed={isPicked}>
-                              <span className="ud-pick-date">
-                                <strong>{moment(h.date).format('DD')}</strong>
-                                <small>{moment(h.date).format('MMM')}</small>
-                              </span>
-                              <span className="ud-pick-text">
-                                <strong>{h.name}</strong>
-                                <small>{h.day}{passed ? ' · passed' : ''}</small>
-                              </span>
-                              <span className="ud-pick-check"><i className={'bx ' + (isPicked ? 'bx-check' : passed ? 'bx-lock-alt' : 'bx-plus')}></i></span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="ud-pick-actions">
-                        <span className="text-muted small">
-                          {dirty ? 'You have unsaved changes' : savedSelection.length ? 'Saved ✓' : 'Nothing chosen yet'}
-                        </span>
-                        <div className="d-flex gap-2">
-                          {dirty && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setPicked(savedSelection)} disabled={saving}>Reset</button>}
-                          <button type="button" className="btn btn-sm btn-primary" onClick={savePicks} disabled={!dirty || saving}>
-                            {saving ? <><span className="spinner-border spinner-border-sm me-1"></span>Saving…</> : <><i className="bx bx-save me-1"></i>Save choices</>}
-                          </button>
-                        </div>
-                      </div>
-                    </>
+              )}
+
+              {/* My week (hours per day) + team today (who is in / away) */}
+              {(show('myWeek') || show('teamToday')) && (
+                <div className="row g-3">
+                  {show('myWeek') && (
+                    <div className={show('teamToday') ? 'col-md-6' : 'col-12'}><MyWeek /></div>
+                  )}
+                  {show('teamToday') && (
+                    <div className={show('myWeek') ? 'col-md-6' : 'col-12'}><TeamToday /></div>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Calendar + side lists */}
-      {(show('calendar') || showSide) && (
-        <div className="row g-3">
-          {show('calendar') && (
-            <div className={showSide ? 'col-xl-8' : 'col-12'}>
-              <div className="card ud-card">
-                <div className="ud-card-head">
-                  <div>
-                    <h5>My calendar</h5>
-                    <p>Holidays, leave and attendance in one place</p>
-                  </div>
-                </div>
-                <div className="ud-legend">
-                  <span className="ud-chip ud-c-fixed"><i></i>Holiday</span>
-                  <span className="ud-chip ud-c-optional-chosen"><i></i>My optional</span>
-                  <span className="ud-chip ud-c-optional"><i></i>Optional (not chosen)</span>
-                  <span className="ud-chip ud-c-leave"><i></i>Leave</span>
-                  <span className="ud-chip ud-c-wfh"><i></i>WFH</span>
-                  <span className="ud-chip ud-c-pending"><i></i>Pending</span>
-                  <span className="ud-chip ud-c-present"><i></i>Attendance</span>
-                </div>
-                <div className="ud-card-body">
-                  {(!calendar || !leaves) && <span className="fx-skeleton ud-sk-calendar"></span>}
-                  <div ref={calendarRef} className="ud-calendar"></div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
           {showSide && (
-            <div className={(show('calendar') ? 'col-xl-4' : 'col-12') + ' d-flex flex-column gap-3'}>
+            <div className={(showMain ? 'col-xl-4' : 'col-12') + ' ud-col'}>
+              {show('timeOff') && (
+                <div className="card ud-card">
+                  <div className="ud-card-head">
+                    <span className="ud-card-icon tone-cyan"><i className="bx bx-sun"></i></span>
+                    <div>
+                      <h5>Time off {year}</h5>
+                      <p>{balance ? balance.totalPaidDaysOff : 22} paid days off: fixed + optional + flexi</p>
+                    </div>
+                  </div>
+                  {loading ? (
+                    <div className="ud-card-body">{[0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)}</div>
+                  ) : (
+                    <div className="ud-card-body ud-balance">
+                      <BalanceRow tone="rose" icon="bx-buildings" title="Fixed holidays" detail="Office closed · no action needed"
+                        segments={[{ value: balance.fixedPassed, label: 'passed' }]} total={balance.fixedTotal}
+                        right={`${balance.fixedTotal - balance.fixedPassed} to go`} />
+                      <BalanceRow tone="violet" icon="bx-star" title="Optional holidays" detail={`Pick any ${balance.optionalAllowed} from the list`}
+                        segments={[{ value: balance.optionalPassed, label: 'taken' }, { value: balance.optionalSelected - balance.optionalPassed, label: 'planned', soft: true }]}
+                        total={balance.optionalAllowed}
+                        right={`${balance.optionalSelected} of ${balance.optionalAllowed} chosen`} />
+                      <BalanceRow tone="cyan" icon="bx-sun" title="Flexi-holidays" detail="Sick + paid leave, any reason"
+                        segments={[{ value: balance.flexiUsed, label: 'used' }, { value: balance.flexiPending, label: 'pending', soft: true }]}
+                        total={balance.flexiTotal}
+                        right={`${fmtDays(balance.flexiRemaining)} left`} />
+
+                      <div className="ud-month">
+                        <div className="ud-month-title">This month</div>
+                        <div className="ud-month-stats">
+                          <span><strong>{month.presentDays}<em>/{month.workingDays}</em></strong><small>days present</small></span>
+                          <span><strong>{month.lateCount}</strong><small>late arrivals</small></span>
+                          <span><strong>{month.avgSeconds ? formatHm(month.avgSeconds) : '–'}</strong><small>avg per day</small></span>
+                          <span><strong>{fmtDays(balance.wfhDays)}</strong><small>WFH days this year</small></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {show('optionalHolidays') && (
+                <div className="card ud-card">
+                  <div className="ud-card-head">
+                    <span className="ud-card-icon tone-violet"><i className="bx bx-star"></i></span>
+                    <div>
+                      <h5>Choose your optional holidays</h5>
+                      <p>Pick any {allowed || 4} of the {calendar ? calendar.optional.length : 7} dates · passed dates are locked</p>
+                    </div>
+                    <span className={'ud-pick-count' + (picked.length === allowed ? ' is-full' : '')}>{picked.length}/{allowed || 4} chosen</span>
+                  </div>
+                  <div className="ud-card-body">
+                    {!calendar ? (
+                      [0, 1, 2].map((i) => <span key={i} className="fx-skeleton ud-sk-row"></span>)
+                    ) : !calendar.defined ? (
+                      <div className="ud-empty">No holiday calendar has been set up for {year} yet.</div>
+                    ) : (
+                      <>
+                        <div className="ud-picks">
+                          {calendar.optional.map((h) => {
+                            const isPicked = picked.includes(h.date);
+                            const passed = h.date < todayKey;
+                            const blocked = !isPicked && picked.length >= allowed;
+                            return (
+                              <button key={h.date} type="button" disabled={passed}
+                                className={'ud-pick' + (isPicked ? ' is-picked' : '') + (passed ? ' is-passed' : '') + (blocked ? ' is-blocked' : '')}
+                                onClick={() => togglePick(h.date)} aria-pressed={isPicked}>
+                                <span className="ud-pick-date">
+                                  <strong>{moment(h.date).format('DD')}</strong>
+                                  <small>{moment(h.date).format('MMM')}</small>
+                                </span>
+                                <span className="ud-pick-text">
+                                  <strong>{h.name}</strong>
+                                  <small>{h.day}{passed ? ' · passed' : ''}</small>
+                                </span>
+                                <span className="ud-pick-check"><i className={'bx ' + (isPicked ? 'bx-check' : passed ? 'bx-lock-alt' : 'bx-plus')}></i></span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="ud-pick-actions">
+                          <span className="text-muted small">
+                            {dirty ? 'You have unsaved changes' : savedSelection.length ? 'Saved ✓' : 'Nothing chosen yet'}
+                          </span>
+                          <div className="d-flex gap-2">
+                            {dirty && <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setPicked(savedSelection)} disabled={saving}>Reset</button>}
+                            <button type="button" className="btn btn-sm btn-primary" onClick={savePicks} disabled={!dirty || saving}>
+                              {saving ? <><span className="spinner-border spinner-border-sm me-1"></span>Saving…</> : <><i className="bx bx-save me-1"></i>Save choices</>}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {show('upcomingHolidays') && (
                 <div className="card ud-card">
                   <div className="ud-card-head">
+                    <span className="ud-card-icon tone-rose"><i className="bx bx-calendar-star"></i></span>
                     <div>
                       <h5>Upcoming holidays</h5>
                       <p>Fixed holidays and your optional picks</p>
@@ -564,6 +579,7 @@ export default function UserDashboard() {
               {show('leaveRequests') && (
                 <div className="card ud-card">
                   <div className="ud-card-head">
+                    <span className="ud-card-icon tone-amber"><i className="bx bx-envelope"></i></span>
                     <div>
                       <h5>My leave requests</h5>
                       <p>Latest 5</p>

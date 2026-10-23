@@ -39,6 +39,7 @@ import { STATUSES, statusClass, PRESETS, formatHours, groupTime, Avatar, KpiTile
 import { destroySelect2 } from '../../lib/destroySelect2';
 import '../employeeTaskReport/employeeTaskReport.css';
 import './clientTaskReport.css';
+import { hideEmptyOption } from '../../lib/select2Options';
 
 const FULL_WIDTH = { width: '100%' };
 
@@ -216,9 +217,9 @@ export default function ClientTaskReport() {
 
   // The three dropdowns are select2 dropdowns; their values are read from select2 on submit
   useEffect(() => {
-    $('#clientSelect').select2({ placeholder: 'All Clients', allowClear: true, width: '100%' });
-    $('#projectSelect').select2({ placeholder: 'All Projects', allowClear: true, width: '100%' });
-    $('#employeeSelect').select2({ placeholder: 'All Employees', allowClear: true, width: '100%' });
+    $('#clientSelect').select2({ placeholder: 'All Clients', allowClear: true, width: '100%', templateResult: hideEmptyOption });
+    $('#projectSelect').select2({ placeholder: 'All Projects', allowClear: true, width: '100%', templateResult: hideEmptyOption });
+    $('#employeeSelect').select2({ placeholder: 'All Employees', allowClear: true, width: '100%', templateResult: hideEmptyOption });
 
     /**
      * Re-scope the project dropdown to the chosen client, dropping a project

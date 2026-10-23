@@ -47,6 +47,13 @@ function completedOnDay(task, completedOn) {
   return finished >= dayStart && finished <= dayEnd;
 }
 
+/** True when the task's name or task ID contains the search text (any case), like the server. */
+function matchesSearch(task, search) {
+  const text = search.toLowerCase();
+  return String(task.taskName || '').toLowerCase().includes(text)
+    || String(task.taskId || '').toLowerCase().includes(text);
+}
+
 export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   const isActiveRef = useRef(true);
   const containerRef = useRef(null);
@@ -60,7 +67,9 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   const assignedUserId = board.selectedUser || null;
   // Only the Completed column is limited to one day ("YYYY-MM-DD", see Task.jsx).
   const completedOn = status === 'Completed' ? (board.completedOn || null) : null;
-  const scopeKey = `${projectId || ''}|${assignedUserId || ''}|${completedOn || ''}`;
+  // Search text (task name or ID) - applies to every column.
+  const search = board.search || '';
+  const scopeKey = `${projectId || ''}|${assignedUserId || ''}|${completedOn || ''}|${search}`;
 
   // "Load more" raises the limit; a scope change starts again at one page
   // (a limit raised for another scope no longer counts).
@@ -69,17 +78,12 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
 
   // Own changes reload the column at once (any data-changing call); the interval only picks up
   // colleagues' changes, so 15s is enough - 5 columns polling every 5s queued up the page's requests.
-  const { docs, ready } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit, completedOn],
+  const { docs, upToDate } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit, completedOn, search],
     { intervalMs: 15000 });
 
-  // The publication is "ready" again only once docs for the CURRENT filters
-  // and limit have arrived (the spinner shows while a new page is loading).
-  const subscriptionKey = `${scopeKey}|${limit}`;
-  const [loadedKey, setLoadedKey] = useState(null);
-  useEffect(() => {
-    setLoadedKey(subscriptionKey);
-  }, [docs]);
-  const subscriptionReady = ready && loadedKey === subscriptionKey;
+  // The column is ready only once docs for the CURRENT filters and limit have
+  // arrived (the skeleton shows while a new page is loading).
+  const subscriptionReady = upToDate;
 
   /** Selector mirroring the publication's query for this column. */
   const matchesColumn = (task) => {
@@ -92,6 +96,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     if (projectId && task.projectId !== projectId) return false;
     if (assignedUserId && task.assignedTo !== assignedUserId) return false;
     if (completedOn && !completedOnDay(task, completedOn)) return false;
+    if (search && !matchesSearch(task, search)) return false;
     return true;
   };
 
@@ -110,7 +115,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     if (!isActiveRef.current) return;
     const requestId = ++countRequestIdRef.current;
     api.call('projectTasks.getKanbanColumnCount',
-      status, projectId, assignedUserId, completedOn,
+      status, projectId, assignedUserId, completedOn, search,
       (error, count) => {
         if (error || !isActiveRef.current || requestId !== countRequestIdRef.current) return;
         setTotal(count || 0);

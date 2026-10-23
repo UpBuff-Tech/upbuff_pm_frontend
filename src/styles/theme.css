@@ -66,6 +66,15 @@
 /* ---------------------------------------------------------------------------
    Base
    ------------------------------------------------------------------------- */
+
+/* The page never scrolls sideways: wide parts (kanban board, Gantt chart, report tables) scroll
+   inside their own box. Anything that still pokes out on the right (a hidden popup, a long
+   unbroken word) is cut off instead of letting the whole page - menu and top bar included -
+   slide left. "clip" rather than "hidden" keeps the sticky top bar working. */
+html {
+  overflow-x: clip;
+}
+
 html,
 body,
 .layout-wrapper,

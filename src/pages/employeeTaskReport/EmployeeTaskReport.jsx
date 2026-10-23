@@ -12,6 +12,7 @@ import { hasReportTasks, getReportRangeLabel, formatDate } from './utility';
 import { STATUSES, statusClass, PRESETS, formatHours, groupTime, Avatar, KpiTile, RankedBars, SortHeader } from './reportUi';
 import './employeeTaskReport.css';
 import { destroySelect2 } from '../../lib/destroySelect2';
+import { hideEmptyOption } from '../../lib/select2Options';
 
 // Mirrors the on-screen report table, totals row included.
 const EXPORT_COLUMNS = [
@@ -165,9 +166,9 @@ export default function EmployeeTaskReport() {
 
   // The three dropdowns are select2 dropdowns; their values are read from select2 on submit
   useEffect(() => {
-    $('#employeeSelect').select2({ placeholder: 'Select Employee', allowClear: true, width: '100%' });
-    $('#projectSelect').select2({ placeholder: 'Select Project', allowClear: true, width: '100%' });
-    $('#statusFilter').select2({ placeholder: 'All Statuses', allowClear: true, width: '100%', minimumResultsForSearch: Infinity });
+    $('#employeeSelect').select2({ placeholder: 'Select Employee', allowClear: true, width: '100%', templateResult: hideEmptyOption });
+    $('#projectSelect').select2({ placeholder: 'Select Project', allowClear: true, width: '100%', templateResult: hideEmptyOption });
+    $('#statusFilter').select2({ placeholder: 'All Statuses', allowClear: true, width: '100%', minimumResultsForSearch: Infinity, templateResult: hideEmptyOption });
 
     return () => {
       destroySelect2('#employeeSelect, #projectSelect, #statusFilter');

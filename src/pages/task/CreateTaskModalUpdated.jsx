@@ -321,7 +321,7 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
 
   return (
     <div className="modal fade" id="taskCreationModal" tabIndex="-1" aria-hidden="true">
-      <div className="modal-dialog modal-lg" role="document">
+      <div className="modal-dialog modal-xl" role="document">
         <div className="modal-content">
           <div className="modal-header text-white">
             <h5 className="modal-title">
@@ -332,8 +332,10 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
           <div className="modal-body">
             <form id="taskCreationForm" ref={formRef}>
               <div className="row">
+                {/* Row 1: where the task goes */}
+
                 {/* Project Selection */}
-                <div className="col-md-6 mb-3">
+                <div className="col-md-5 mb-3">
                   <label className="form-label" htmlFor="createTaskProject">Project <span className="text-danger">*</span></label>
                   <select className="form-select" id="createTaskProject" required>
                     <option value="">Select Project...</option>
@@ -344,15 +346,36 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                 </div>
 
                 {/* Task ID (Auto-generated display) */}
-                <div className="col-md-6 mb-3">
+                <div className="col-md-3 mb-3">
                   <label className="form-label" htmlFor="createTaskId">Task ID</label>
                   <input type="text" className="form-control" id="createTaskId" readOnly
                     style={{ backgroundColor: '#f0f0f0' }} value={generatedTaskId} />
                   <small className="text-muted">Auto-generated based on project</small>
                 </div>
 
+                {/* Request Type */}
+                <div className="col-md-4 mb-3">
+                  <label className="form-label" htmlFor="createTaskRequestType">Request Type <span
+                    className="text-danger">*</span></label>
+                  <select className="form-select" id="createTaskRequestType" required>
+                    <option value="">Select request type...</option>
+                    {TASK_REQUEST_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Row 2: what it is */}
+
+                {/* Task Name */}
+                <div className="col-md-8 mb-3">
+                  <label className="form-label" htmlFor="createTaskName">Task Name <span className="text-danger">*</span></label>
+                  <input type="text" className="form-control" id="createTaskName" placeholder="Enter task name" required
+                    value={textFields.taskName} onChange={(event) => setTextField('taskName', event.target.value)} />
+                </div>
+
                 {/* Link to Ticket (Optional) */}
-                <div className="col-md-12 mb-3">
+                <div className="col-md-4 mb-3">
                   <label className="form-label" htmlFor="createTaskTicket">Link to Ticket <small
                     className="text-muted">(Optional)</small></label>
                   <select id="createTaskTicket" style={{ width: '100%' }}>
@@ -391,35 +414,10 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                   </div>
                 )}
 
-                {/* Request Type */}
-                <div className="col-md-12 mb-3">
-                  <label className="form-label" htmlFor="createTaskRequestType">Request Type <span
-                    className="text-danger">*</span></label>
-                  <select className="form-select" id="createTaskRequestType" required>
-                    <option value="">Select request type...</option>
-                    {TASK_REQUEST_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Task Name */}
-                <div className="col-md-12 mb-3">
-                  <label className="form-label" htmlFor="createTaskName">Task Name <span className="text-danger">*</span></label>
-                  <input type="text" className="form-control" id="createTaskName" placeholder="Enter task name" required
-                    value={textFields.taskName} onChange={(event) => setTextField('taskName', event.target.value)} />
-                </div>
-
-                {/* Phase/Activity */}
-                <div className="col-md-12 mb-3">
-                  <label className="form-label" htmlFor="createTaskPhase">Phase/Activity</label>
-                  <textarea className="form-control" id="createTaskPhase" rows="3"
-                    placeholder="Enter phase/activity details..."
-                    value={textFields.phase} onChange={(event) => setTextField('phase', event.target.value)}></textarea>
-                </div>
+                {/* Row 3: state and owner */}
 
                 {/* Status */}
-                <div className="col-md-4 mb-3">
+                <div className="col-md-3 mb-3">
                   <label className="form-label" htmlFor="createTaskStatus">Status <span className="text-danger">*</span></label>
                   <select className="form-select" id="createTaskStatus" required defaultValue="Pending">
                     <option value="Pending">Pending</option>
@@ -431,7 +429,7 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                 </div>
 
                 {/* Priority */}
-                <div className="col-md-4 mb-3">
+                <div className="col-md-3 mb-3">
                   <label className="form-label" htmlFor="createTaskPriority">Priority</label>
                   <select className="form-select" id="createTaskPriority" defaultValue="Low">
                     <option value="Low">Low</option>
@@ -442,22 +440,15 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                 </div>
 
                 {/* Duration */}
-                <div className="col-md-4 mb-3">
+                <div className="col-md-3 mb-3">
                   <label className="form-label" htmlFor="createTaskDuration">Duration (Days)</label>
                   <input type="number" className="form-control" id="createTaskDuration" placeholder="e.g., 5" min="0"
                     step="any"
                     value={textFields.duration} onChange={(event) => setTextField('duration', event.target.value)} />
                 </div>
 
-                {/* Responsibility */}
-                <div className="col-md-6 mb-3">
-                  <label className="form-label" htmlFor="createTaskResponsibility">Responsibility</label>
-                  <input type="text" className="form-control" id="createTaskResponsibility" placeholder="e.g., Dev Team"
-                    value={textFields.responsibility} onChange={(event) => setTextField('responsibility', event.target.value)} />
-                </div>
-
                 {/* Assigned To */}
-                <div className="col-md-6 mb-3">
+                <div className="col-md-3 mb-3">
                   <label className="form-label" htmlFor="createTaskAssignedTo">Assigned To</label>
                   <select id="createTaskAssignedTo" style={{ width: '100%' }}>
                     <option value="">Select user...</option>
@@ -467,8 +458,17 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                   </select>
                 </div>
 
+                {/* Row 4 */}
+
+                {/* Responsibility */}
+                <div className="col-md-4 mb-3">
+                  <label className="form-label" htmlFor="createTaskResponsibility">Responsibility</label>
+                  <input type="text" className="form-control" id="createTaskResponsibility" placeholder="e.g., Dev Team"
+                    value={textFields.responsibility} onChange={(event) => setTextField('responsibility', event.target.value)} />
+                </div>
+
                 {/* Dependencies (Multi-select) */}
-                <div className="col-md-12 mb-3">
+                <div className="col-md-8 mb-3">
                   <label className="form-label" htmlFor="createTaskDependencies">Dependencies</label>
                   <select id="createTaskDependencies" style={{ width: '100%' }} multiple>
                     {dependencyOptions.map(option => (
@@ -477,6 +477,14 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                   </select>
                   <small className="text-muted">Select tasks that must complete before this one. Actual start/finish dates
                     will be auto-generated based on task status.</small>
+                </div>
+
+                {/* Phase/Activity */}
+                <div className="col-md-12 mb-3">
+                  <label className="form-label" htmlFor="createTaskPhase">Phase/Activity</label>
+                  <textarea className="form-control" id="createTaskPhase" rows="2"
+                    placeholder="Enter phase/activity details..."
+                    value={textFields.phase} onChange={(event) => setTextField('phase', event.target.value)}></textarea>
                 </div>
               </div>
             </form>

@@ -36,6 +36,7 @@ import {
 import AttendanceDetailModal from './AttendanceDetailModal';
 import LeaveDetailModal from './LeaveDetailModal';
 import AttendanceDayModal from './AttendanceDayModal';
+import { hideEmptyOption } from '../../lib/select2Options';
 
 // Breadcrumb: confirms the attendance module actually loaded/evaluated on the client.
 console.log('[attendance] module loaded');
@@ -460,7 +461,7 @@ export default function Attendance() {
 
     if (employeesLoaded) {
       if ($filter.data('select2')) { $filter.select2('destroy'); }
-      $filter.select2({ placeholder: 'All Employees', allowClear: true, width: '100%' });
+      $filter.select2({ placeholder: 'All Employees', allowClear: true, width: '100%', templateResult: hideEmptyOption });
     }
 
     return () => {

@@ -1,7 +1,7 @@
 /* ============================================================================
    Sidebar
    Expanded (labels) by default; html.fx-sidebar-collapsed turns it into an
-   icon rail on desktop. Below 1200px it slides in over the page
+   icon rail on desktop. Below 992px it slides in over the page
    (html.fx-sidebar-open). See layouts/sidebarState.js.
    ========================================================================== */
 
@@ -28,8 +28,12 @@
   transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease;
 }
 
-/* Page sits to the right of the sidebar */
+/* Page sits to the right of the sidebar.
+   min-width: 0 lets the page (a flex item) be narrower than its widest content, so wide parts
+   like the kanban board scroll inside their own box instead of making the whole page scroll
+   sideways. */
 .layout-wrapper .layout-page {
+  min-width: 0;
   padding-left: var(--fx-sidebar-w) !important;
   transition: padding-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -360,7 +364,7 @@
 /* ============================================================================
    Collapsed rail (desktop)
    ========================================================================== */
-@media (min-width: 1200px) {
+@media (min-width: 992px) {
   html.fx-sidebar-collapsed .fx-sidebar {
     width: var(--fx-sidebar-w-collapsed);
   }
@@ -430,7 +434,7 @@
 /* ============================================================================
    Small screens: off-canvas
    ========================================================================== */
-@media (max-width: 1199.98px) {
+@media (max-width: 991.98px) {
   .fx-sidebar {
     transform: translateX(-100%);
     box-shadow: none;
@@ -450,7 +454,13 @@
     position: fixed;
     inset: 0;
     z-index: 1079;
-    background: rgba(15, 23, 42, 0.5);
-    backdrop-filter: blur(2px);
+    background: rgba(15, 23, 42, 0.45);
   }
+}
+
+/* The old theme's own overlays (shown by its menu script below 1200px) stacked a second, blurred
+   layer over the page. .fx-sidebar-backdrop above replaces them, so they are never shown. */
+.layout-overlay,
+.content-backdrop {
+  display: none !important;
 }

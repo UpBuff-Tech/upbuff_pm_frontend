@@ -11,6 +11,8 @@ export const DASHBOARD_SECTIONS = [
   { key: 'timeOff', label: 'Time off balance', detail: 'Fixed, optional and flexi days' },
   { key: 'optionalHolidays', label: 'Optional holiday picker', detail: 'Choose your optional holidays' },
   { key: 'calendar', label: 'My calendar', detail: 'Holidays, leave and attendance' },
+  { key: 'myWeek', label: 'My week', detail: 'Hours at work each day this week' },
+  { key: 'teamToday', label: 'Team today', detail: "Who is in, remote or on leave" },
   { key: 'upcomingHolidays', label: 'Upcoming holidays', detail: 'The next holidays of the year' },
   { key: 'leaveRequests', label: 'My leave requests', detail: 'Your latest 5 requests' },
 ];

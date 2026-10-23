@@ -1,9 +1,9 @@
 // Sidebar state, kept as classes on <html> so plain CSS can lay out the page:
 //   fx-sidebar-collapsed  desktop: icon-only rail (remembered across visits)
-//   fx-sidebar-open       below 1200px: the sidebar slides in over the page
+//   fx-sidebar-open       below 992px (tablets, phones): the sidebar slides in over the page
 
 const COLLAPSED_KEY = 'fx-sidebar-collapsed';
-const DESKTOP_QUERY = '(min-width: 1200px)';
+const DESKTOP_QUERY = '(min-width: 992px)'; // keep in sync with menu.css
 
 function readCollapsed() {
   try {

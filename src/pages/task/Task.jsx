@@ -19,6 +19,7 @@ import KanbanColumn from './KanbanColumn';
 import TaskDetailModalUpdated from './TaskDetailModalUpdated';
 import TodayHoursModalUpdated from './TodayHoursModalUpdated';
 import CreateTaskModalUpdated from './CreateTaskModalUpdated';
+import { hideEmptyOption } from '../../lib/select2Options';
 
 /** Turn a list of docs into an _id -> doc lookup map. */
 function mapById(list) {
@@ -48,6 +49,14 @@ export default function Task() {
   const [selectedUser, setSelectedUser] = useState(() => currentUserId() || '');
   // The Completed column only shows the tasks completed on this day ("YYYY-MM-DD").
   const [completedOn, setCompletedOn] = useState(todayDateString);
+  // Search box (task name or task ID). searchText follows what is typed; the columns use
+  // appliedSearch, which updates 400 ms after the user stops typing (not on every key).
+  const [searchText, setSearchText] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setAppliedSearch(searchText.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   // One shared 1s tick: card time displays and the banner re-render from this
   // while a timer is running.
@@ -275,6 +284,7 @@ export default function Task() {
     selectedProject,
     selectedUser,
     completedOn,
+    search: appliedSearch,
     timerTick,
     projectsList,
     usersList,
@@ -390,7 +400,7 @@ export default function Task() {
     const $project = $('#filterByProject');
     if ($project.length) {
       if ($project.data('select2')) { $project.select2('destroy'); }
-      $project.select2({ placeholder: 'All Projects', allowClear: true, width: '200px' });
+      $project.select2({ placeholder: 'All Projects', allowClear: true, width: '100%', templateResult: hideEmptyOption });
     }
   }, [projectsList]);
 
@@ -418,7 +428,7 @@ export default function Task() {
     const $user = $('#filterByUser');
     if (!$user.length) return;
     if ($user.data('select2')) { $user.select2('destroy'); }
-    $user.select2({ placeholder: 'All Users', allowClear: true, width: '200px' });
+    $user.select2({ placeholder: 'All Users', allowClear: true, width: '100%', templateResult: hideEmptyOption });
     const uid = currentUserId();
     if (uid && $user.find('option[value="' + uid + '"]').length) {
       $user.val(uid).trigger('change');
@@ -478,8 +488,14 @@ export default function Task() {
       <div className="tb-toolbar">
         <div className="tb-filters">
           <div className="tb-filter">
+            <span className="tb-filter-label"><i className="bx bx-search"></i>Search</span>
+            <input type="search" className="form-control" id="filterBySearch"
+              placeholder="Task name or ID" title="Show only the tasks whose name or task ID contains this text"
+              value={searchText} onChange={(event) => setSearchText(event.target.value)} />
+          </div>
+          <div className="tb-filter">
             <span className="tb-filter-label"><i className="bx bx-folder"></i>Project</span>
-            <select className="form-select" id="filterByProject" style={{ width: '200px' }}>
+            <select className="form-select" id="filterByProject">
               <option value="">All Projects</option>
               {projectsList.map(project => (
                 <option key={project._id} value={project._id}>{project.name}</option>
@@ -488,7 +504,7 @@ export default function Task() {
           </div>
           <div className="tb-filter">
             <span className="tb-filter-label"><i className="bx bx-user"></i>Assignee</span>
-            <select className="form-select" id="filterByUser" style={{ width: '200px' }}>
+            <select className="form-select" id="filterByUser">
               <option value="">All Users</option>
               {(userFilterOptions || []).map(u => (
                 <option key={u._id} value={u._id}>{userFullName(u)}</option>
@@ -497,7 +513,7 @@ export default function Task() {
           </div>
           <div className="tb-filter">
             <span className="tb-filter-label"><i className="bx bx-calendar-check"></i>Completed on</span>
-            <input type="date" className="form-control" id="filterByCompletedOn" style={{ width: '160px' }}
+            <input type="date" className="form-control" id="filterByCompletedOn"
               title="Which day's completed tasks the Completed column shows"
               value={completedOn} max={todayDateString()}
               onChange={(event) => setCompletedOn(event.target.value || todayDateString())} />

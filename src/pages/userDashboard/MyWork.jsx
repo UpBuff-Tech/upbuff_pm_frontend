@@ -52,10 +52,11 @@ export default function MyWork() {
   const tickets = work && work.tickets;
 
   return (
-    <div className="row g-3 mb-3">
-      <div className="col-xl-6">
+    <div className="row g-3">
+      <div className="col-md-6">
         <div className="card h-100 ud-card">
           <div className="ud-card-head">
+            <span className="ud-card-icon tone-indigo"><i className="bx bx-task"></i></span>
             <div>
               <h5>My tasks</h5>
               <p>{tasks ? openSummary(tasks.total, tasks.overdue, 'task') : 'Tasks assigned to you that are not completed'}</p>
@@ -95,9 +96,10 @@ export default function MyWork() {
         </div>
       </div>
 
-      <div className="col-xl-6">
+      <div className="col-md-6">
         <div className="card h-100 ud-card">
           <div className="ud-card-head">
+            <span className="ud-card-icon tone-violet"><i className="bx bx-support"></i></span>
             <div>
               <h5>My tickets</h5>
               <p>{tickets ? openSummary(tickets.total, tickets.overdue, 'ticket') : 'Tickets assigned to you that are not closed'}</p>
