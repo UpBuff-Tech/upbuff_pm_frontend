@@ -47,8 +47,9 @@ export default function Task() {
   // Default the board to the current user's tasks, like the original page.
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedUser, setSelectedUser] = useState(() => currentUserId() || '');
-  // The Completed column only shows the tasks completed on this day ("YYYY-MM-DD").
-  const [completedOn, setCompletedOn] = useState(todayDateString);
+  // The Completed column only shows the tasks completed between these days ("YYYY-MM-DD", both included).
+  const [completedFrom, setCompletedFrom] = useState(todayDateString);
+  const [completedTo, setCompletedTo] = useState(todayDateString);
   // Search box (task name or task ID). searchText follows what is typed; the columns use
   // appliedSearch, which updates 400 ms after the user stops typing (not on every key).
   const [searchText, setSearchText] = useState('');
@@ -283,7 +284,8 @@ export default function Task() {
     isActive: () => isActiveRef.current,
     selectedProject,
     selectedUser,
-    completedOn,
+    completedOn: completedFrom,
+    completedTo,
     search: appliedSearch,
     timerTick,
     projectsList,
@@ -511,12 +513,19 @@ export default function Task() {
               ))}
             </select>
           </div>
-          <div className="tb-filter">
-            <span className="tb-filter-label"><i className="bx bx-calendar-check"></i>Completed on</span>
-            <input type="date" className="form-control" id="filterByCompletedOn"
-              title="Which day's completed tasks the Completed column shows"
-              value={completedOn} max={todayDateString()}
-              onChange={(event) => setCompletedOn(event.target.value || todayDateString())} />
+          <div className="tb-filter tb-filter-range">
+            <span className="tb-filter-label"><i className="bx bx-calendar-check"></i>Completed between</span>
+            <div className="tb-range">
+              <input type="date" className="form-control" id="filterByCompletedFrom" aria-label="Completed from"
+                title="First day of the completed tasks the Completed column shows"
+                value={completedFrom} max={completedTo}
+                onChange={(event) => setCompletedFrom(event.target.value || completedTo)} />
+              <span className="tb-range-sep">–</span>
+              <input type="date" className="form-control" id="filterByCompletedTo" aria-label="Completed to"
+                title="Last day of the completed tasks the Completed column shows"
+                value={completedTo} min={completedFrom} max={todayDateString()}
+                onChange={(event) => setCompletedTo(event.target.value || todayDateString())} />
+            </div>
           </div>
         </div>
 

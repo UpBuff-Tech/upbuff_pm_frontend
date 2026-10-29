@@ -73,6 +73,28 @@
   font-size: 1rem;
 }
 
+/* Two dates side by side ("from – to"); takes two filter columns where there is room */
+.tb-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tb-range .form-control {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.tb-range-sep {
+  color: var(--fx-text-muted);
+}
+
+@media (min-width: 768px) {
+  .tb-filter-range {
+    grid-column: span 2;
+  }
+}
+
 .tb-today {
   flex: 0 0 auto;
   margin-left: auto;

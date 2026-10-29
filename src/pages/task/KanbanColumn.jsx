@@ -35,14 +35,14 @@ function SkeletonCard() {
 }
 
 /**
- * True when a task was completed on the day "YYYY-MM-DD" (local day). Mirrors
- * the server: actualFinish, or updatedAt for old tasks that have none.
+ * True when a task was completed between the days "YYYY-MM-DD" (local days, both included).
+ * Mirrors the server: actualFinish, or updatedAt for old tasks that have none.
  */
-function completedOnDay(task, completedOn) {
+function completedInRange(task, completedFrom, completedTo) {
   const finishedAt = task.actualFinish || task.updatedAt;
   if (!finishedAt) return false;
-  const dayStart = new Date(completedOn + 'T00:00:00');
-  const dayEnd = new Date(completedOn + 'T23:59:59.999');
+  const dayStart = new Date(completedFrom + 'T00:00:00');
+  const dayEnd = new Date(completedTo + 'T23:59:59.999');
   const finished = new Date(finishedAt);
   return finished >= dayStart && finished <= dayEnd;
 }
@@ -65,11 +65,12 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
   // The filters this column is scoped to.
   const projectId = board.selectedProject || null;
   const assignedUserId = board.selectedUser || null;
-  // Only the Completed column is limited to one day ("YYYY-MM-DD", see Task.jsx).
+  // Only the Completed column is limited to a range of days ("YYYY-MM-DD", see Task.jsx).
   const completedOn = status === 'Completed' ? (board.completedOn || null) : null;
+  const completedTo = completedOn ? (board.completedTo || completedOn) : null;
   // Search text (task name or ID) - applies to every column.
   const search = board.search || '';
-  const scopeKey = `${projectId || ''}|${assignedUserId || ''}|${completedOn || ''}|${search}`;
+  const scopeKey = `${projectId || ''}|${assignedUserId || ''}|${completedOn || ''}|${completedTo || ''}|${search}`;
 
   // "Load more" raises the limit; a scope change starts again at one page
   // (a limit raised for another scope no longer counts).
@@ -78,7 +79,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
 
   // Own changes reload the column at once (any data-changing call); the interval only picks up
   // colleagues' changes, so 15s is enough - 5 columns polling every 5s queued up the page's requests.
-  const { docs, upToDate } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit, completedOn, search],
+  const { docs, upToDate } = usePublication('projectTasks.kanbanColumn', [status, projectId, assignedUserId, limit, completedOn, search, completedTo],
     { intervalMs: 15000 });
 
   // The column is ready only once docs for the CURRENT filters and limit have
@@ -95,7 +96,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     }
     if (projectId && task.projectId !== projectId) return false;
     if (assignedUserId && task.assignedTo !== assignedUserId) return false;
-    if (completedOn && !completedOnDay(task, completedOn)) return false;
+    if (completedOn && !completedInRange(task, completedOn, completedTo)) return false;
     if (search && !matchesSearch(task, search)) return false;
     return true;
   };
@@ -115,7 +116,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
     if (!isActiveRef.current) return;
     const requestId = ++countRequestIdRef.current;
     api.call('projectTasks.getKanbanColumnCount',
-      status, projectId, assignedUserId, completedOn, search,
+      status, projectId, assignedUserId, completedOn, search, completedTo,
       (error, count) => {
         if (error || !isActiveRef.current || requestId !== countRequestIdRef.current) return;
         setTotal(count || 0);
@@ -243,7 +244,7 @@ export default function KanbanColumn({ board, status, columnKey, tone, icon }) {
           {!loading && tasks.length === 0 && (
             <div className="kanban-empty">
               <i className="bx bx-layer"></i>
-              <span>{completedOn ? 'No tasks completed on this day' : 'No tasks here'}</span>
+              <span>{completedOn ? (completedOn === completedTo ? 'No tasks completed on this day' : 'No tasks completed in these days') : 'No tasks here'}</span>
               <small>Drag a card into this column</small>
             </div>
           )}
