@@ -11,6 +11,7 @@ import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import api, { onDataChanged } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
+import { Session } from '../../lib/session';
 import MyWork from './MyWork';
 import MyWeek from './MyWeek';
 import TeamToday from './TeamToday';
@@ -46,6 +47,14 @@ function greeting() {
 
 const LEAVE_TYPE_LABELS = { leave: 'Flexi leave', wfh: 'Work from home', optional: 'Optional leave' };
 
+// The hidden sections from the last visit, kept in the browser (cleared on logout) so the page
+// shows the user's own layout at once instead of waiting for user.getDashboardPrefs.
+const HIDDEN_SECTIONS_KEY = 'userDashboardHidden';
+const cachedHiddenSections = () => {
+  const cached = Session.get(HIDDEN_SECTIONS_KEY);
+  return Array.isArray(cached) ? cached : null;
+};
+
 export default function UserDashboard() {
   const { user, userId } = useAuth();
 
@@ -56,8 +65,8 @@ export default function UserDashboard() {
   const [leaves, setLeaves] = useState(null); // approved + pending requests of the year
   const [, setTick] = useState(0);
 
-  // Dashboard sections the user has hidden (null until loaded from the server)
-  const [hiddenSections, setHiddenSections] = useState(null);
+  // Dashboard sections the user has hidden (null until known: from the last visit or the server)
+  const [hiddenSections, setHiddenSections] = useState(cachedHiddenSections);
 
   // Optional holiday picker
   const [picked, setPicked] = useState([]);
@@ -89,7 +98,13 @@ export default function UserDashboard() {
   useEffect(() => {
     if (!userId) return undefined;
     api.call('user.getDashboardPrefs', (err, prefs) => {
-      setHiddenSections(!err && prefs && Array.isArray(prefs.hidden) ? prefs.hidden : []);
+      if (err) {
+        setHiddenSections((current) => current || []);
+        return;
+      }
+      const hidden = prefs && Array.isArray(prefs.hidden) ? prefs.hidden : [];
+      setHiddenSections(hidden);
+      Session.setPersistent(HIDDEN_SECTIONS_KEY, hidden);
     });
     loadSummary();
     loadCalendar();
@@ -152,7 +167,8 @@ export default function UserDashboard() {
   const month = summary ? summary.month : null;
 
   /* ---- Show / hide sections ---- */
-  const show = (key) => hiddenSections !== null && !hiddenSections.includes(key);
+  // Until the choices are known every section is shown with its loading skeleton (never a blank page)
+  const show = (key) => hiddenSections === null || !hiddenSections.includes(key);
   // Two columns: the main one (my work, calendar) and a narrower side one (time off, holidays,
   // leave). A column with nothing to show is left out and the other one takes the full width.
   const showMain = show('myWork') || show('calendar') || show('myWeek') || show('teamToday');
@@ -166,7 +182,9 @@ export default function UserDashboard() {
       if (err) {
         toastr.error(err.reason || 'Failed to save your dashboard choices');
         setHiddenSections(previous);
+        return;
       }
+      Session.setPersistent(HIDDEN_SECTIONS_KEY, nextHidden);
     });
   };
 
