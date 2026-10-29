@@ -37,25 +37,47 @@
   <link rel="stylesheet" href="/assets/vendor/css/pages/page-auth.css" />
   <link rel="stylesheet" href="/assets/vendor/css/pages/page-icons.css" />
 
-  <!-- jQuery and its plugins are plain globals ($, toastr, select2), as they were in the Meteor app -->
-  <script src="/vendor/jquery.min.js"></script>
-  <script src="/vendor/select2.full.min.js"></script>
-  <script src="/vendor/toastr.min.js"></script>
-  <script src="/vendor/cropper.js"></script>
-  <script src="/vendor/printThis.js"></script>
+  <!-- jQuery and its plugins are plain globals ($, toastr, select2), as they were in the Meteor app.
+       "defer" keeps their order and still runs them before the app (/src/main.jsx), but lets the
+       page paint the loader below instead of staying white while ~1.5 MB of scripts download. -->
+  <script defer src="/vendor/jquery.min.js"></script>
+  <script defer src="/vendor/select2.full.min.js"></script>
+  <script defer src="/vendor/toastr.min.js"></script>
+  <script defer src="/vendor/cropper.js"></script>
+  <script defer src="/vendor/printThis.js"></script>
 
   <!-- Helpers -->
-  <script src="/assets/js/config.js"></script>
-  <script src="/assets/vendor/js/helpers.js"></script>
-  <script src="/assets/vendor/js/bootstrap.js"></script>
-  <script src="/assets/vendor/js/bootstrap1.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/linways/table-to-excel@v1.0.4/dist/tableToExcel.js"></script>
+  <script defer src="/assets/js/config.js"></script>
+  <script defer src="/assets/vendor/js/helpers.js"></script>
+  <script defer src="/assets/vendor/js/bootstrap.js"></script>
+  <script defer src="/assets/vendor/js/bootstrap1.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/gh/linways/table-to-excel@v1.0.4/dist/tableToExcel.js"></script>
   <!-- SortableJS for drag and drop -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
+  <!-- Styles for the boot loader below (same look as components/loader/PageLoader) -->
+  <style>
+    .fx-boot-loader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f5f7fb; }
+    .fx-boot-orbit { position: relative; width: 64px; height: 64px; }
+    .fx-boot-ring { position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(79, 70, 229, 0) 0deg, #6366f1 220deg, #22c55e 360deg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+      animation: fx-boot-spin 0.9s linear infinite; }
+    .fx-boot-mark { position: absolute; inset: 18px; width: 28px; height: 28px; object-fit: contain; }
+    @keyframes fx-boot-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <!-- Shown until React starts; React replaces everything inside #root when it mounts. -->
+  <div id="root">
+    <div class="fx-boot-loader" role="status" aria-label="Loading">
+      <div class="fx-boot-orbit">
+        <span class="fx-boot-ring"></span>
+        <img src="/img/logo.png" alt="" class="fx-boot-mark" />
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
