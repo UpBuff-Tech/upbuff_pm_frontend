@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { setupStackedModals } from './lib/stackedModals';
+import { setupSelect2Positioning } from './lib/select2Position';
 import './styles/datepicker3.css';
 import './styles/daterangepicker.css';
 import './styles/main.css';
@@ -12,6 +13,7 @@ import './components/skeleton/skeleton.css';
 import './components/detailModal/detailModal.css';
 
 setupStackedModals();
+setupSelect2Positioning();
 
 // Success / error / info pop-ups (styled in styles/theme.css): newest on top, a close button and a
 // thin line counting down until the pop-up closes.
