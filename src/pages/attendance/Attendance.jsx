@@ -38,6 +38,11 @@ import LeaveDetailModal from './LeaveDetailModal';
 import AttendanceDayModal from './AttendanceDayModal';
 import { hideEmptyOption } from '../../lib/select2Options';
 
+// The KPI tiles and charts cover this many days up to today
+const INSIGHT_DAYS = 30;
+// attendance.getList pages its answer; ask for a page big enough for everyone's records of a range
+const MAX_RECORDS = 5000;
+
 // Breadcrumb: confirms the attendance module actually loaded/evaluated on the client.
 console.log('[attendance] module loaded');
 
@@ -68,6 +73,10 @@ export default function Attendance() {
   const selectedUserRef = useRef('');
   // holidays.getCalendar answers per "year|user" (the calendar asks again for every month shown)
   const holidayCache = useRef({});
+  // The month the calendar shows; its records are loaded when the user moves to another month
+  const visibleMonth = useRef(moment().startOf('month'));
+  // Number of the newest loadAttendance(), so an older answer arriving late is ignored
+  const latestLoad = useRef(0);
 
   /**
    * Holiday events of the calendar's visible range: fixed holidays (office closed) and the
@@ -97,84 +106,50 @@ export default function Attendance() {
     });
   };
 
-  // Load attendance records
-  const loadAttendance = (userId = null) => {
-    setIsLoading(true);
+  /** api.call as a promise that resolves to null (after logging) when the call fails. */
+  const callApi = (method, ...args) => new Promise((resolve) => {
+    api.call(method, ...args, (error, result) => {
+      if (error) console.error('Error loading ' + method + ':', error);
+      resolve(error ? null : result);
+    });
+  });
 
-    const options = {};
-    if (userId) {
-      options.userId = userId;
-    }
+  /**
+   * Load what the page shows, for everyone or one employee:
+   *  - the calendar: attendance and absent days of the six weeks the month grid of visibleMonth shows
+   *  - the KPI tiles and charts (unless calendarOnly): attendance and absent days of the last 30 days
+   * Leaves are loaded whole for both. A newer load wins over one still on its way.
+   */
+  const loadAttendance = (userId = null, { calendarOnly = false } = {}) => {
+    const loadId = ++latestLoad.current;
+    if (!calendarOnly) setIsLoading(true);
 
-    // Load attendance, leaves, and absent days in parallel
-    let attendanceLoaded = false;
-    let leavesLoaded = false;
-    let absentLoaded = false;
+    const forUser = userId ? { userId } : {};
+    const gridStart = visibleMonth.current.clone().startOf('week');
+    const calendarRange = { startDate: gridStart.toDate(), endDate: gridStart.clone().add(6, 'weeks').subtract(1, 'ms').toDate() };
+    const insightRange = { startDate: moment().subtract(INSIGHT_DAYS - 1, 'days').startOf('day').toDate(), endDate: moment().endOf('day').toDate() };
 
-    const checkAndRender = function () {
-      if (attendanceLoaded && leavesLoaded && absentLoaded) {
-        setInsights(buildInsights(attendanceRecords.current, leaveRecords.current, absentDays.current));
+    Promise.all([
+      callApi('attendance.getList', { ...forUser, ...calendarRange, perPage: MAX_RECORDS }),
+      callApi('attendance.getAbsentDays', { ...forUser, ...calendarRange }),
+      callApi('leaveRequests.getForCalendar', userId || undefined, undefined, undefined),
+      calendarOnly ? null : callApi('attendance.getList', { ...forUser, ...insightRange, perPage: MAX_RECORDS }),
+      calendarOnly ? null : callApi('attendance.getAbsentDays', { ...forUser, ...insightRange }),
+    ]).then(([calendarList, calendarAbsent, leaves, insightList, insightAbsent]) => {
+      if (loadId !== latestLoad.current) return;
+      if (!calendarList) toastr.error('Failed to load attendance records');
+
+      attendanceRecords.current = (calendarList && calendarList.data) || [];
+      absentDays.current = calendarAbsent || [];
+      leaveRecords.current = leaves || [];
+
+      if (!calendarOnly) {
+        const records = (insightList && insightList.data) || [];
+        setStats(calculateStats(records));
+        setInsights(buildInsights(records, leaveRecords.current, insightAbsent || []));
         setIsLoading(false);
-        setCalendarVersion((version) => version + 1);
       }
-    };
-
-    api.call('attendance.getList', options, (error, result) => {
-      if (error) {
-        console.error('Error loading attendance:', error);
-        toastr.error('Failed to load attendance records');
-        attendanceLoaded = true;
-        checkAndRender();
-        return;
-      }
-
-      if (result && result.data) {
-        attendanceRecords.current = result.data;
-        setStats(calculateStats(result.data));
-      } else {
-        attendanceRecords.current = [];
-      }
-
-      attendanceLoaded = true;
-      checkAndRender();
-    });
-
-    // Load approved leaves
-    api.call('leaveRequests.getForCalendar', userId || undefined, undefined, undefined, (error, result) => {
-      if (error) {
-        console.error('Error loading leaves:', error);
-        leavesLoaded = true;
-        checkAndRender();
-        return;
-      }
-
-      if (result) {
-        leaveRecords.current = result;
-      } else {
-        leaveRecords.current = [];
-      }
-
-      leavesLoaded = true;
-      checkAndRender();
-    });
-
-    // Load absent days (non-punched working days)
-    api.call('attendance.getAbsentDays', options, (error, result) => {
-      if (error) {
-        console.error('Error loading absent days:', error);
-        absentLoaded = true;
-        checkAndRender();
-        return;
-      }
-
-      if (result) {
-        absentDays.current = result;
-      } else {
-        absentDays.current = [];
-      }
-
-      absentLoaded = true;
-      checkAndRender();
+      setCalendarVersion((version) => version + 1);
     });
   };
 
@@ -234,6 +209,7 @@ export default function Attendance() {
         },
         buttonText: { today: 'Today' },
         initialView: activeViewRef.current,
+        initialDate: visibleMonth.current.toDate(),
         eventSources: [
           { id: 'attendance', events: loadedEvents },
           { id: 'holidays', events: loadHolidayEvents },
@@ -251,6 +227,13 @@ export default function Attendance() {
           openEventDetail(data);
         },
         datesSet: function (info) {
+          // Another month: load its records (the calendar is drawn again once they arrive)
+          const shownMonth = moment(info.view.currentStart).startOf('month');
+          if (!shownMonth.isSame(visibleMonth.current, 'month')) {
+            visibleMonth.current = shownMonth;
+            loadAttendance(selectedUserRef.current || null, { calendarOnly: true });
+            return;
+          }
           // Swap between day summaries (month) and per-person rows (list) when the view changes
           if (summaries) {
             const wanted = eventsForView(info.view.type);
