@@ -850,6 +850,12 @@
   font-size: 0.6875rem;
 }
 
+.att-day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .att-day-times {
   display: flex;
   flex: 1;

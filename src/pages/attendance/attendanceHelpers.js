@@ -507,20 +507,33 @@ export const DAY_STATUS_LABELS = {
 /**
  * One summary event per day for the "All employees" month view: the day's events are grouped
  * so a cell shows counts per status instead of one chip per person.
- * extendedProps: { type: 'daySummary', date, counts, people: [{ status, event }] }
+ * A person with more than one event that day (punched in on a WFH day) is one entry: the
+ * punch record leads and the other statuses ride along in `extra`.
+ * extendedProps: { type: 'daySummary', date, counts, people: [{ status, event, extra: [{ status, event }] }] }
  */
 export function buildDaySummaries(events) {
   const days = {};
   events.forEach((event) => {
     const key = moment(event.start).format('YYYY-MM-DD');
-    if (!days[key]) days[key] = [];
-    days[key].push({ status: eventStatus(event), event });
+    if (!days[key]) days[key] = {};
+    const userKey = event.extendedProps.userId || event.id;
+    const entry = { status: eventStatus(event), event };
+    const person = days[key][userKey];
+    if (!person) {
+      days[key][userKey] = { ...entry, extra: [] };
+    } else if (event.extendedProps.type === 'attendance' && person.event.extendedProps.type !== 'attendance') {
+      days[key][userKey] = { ...entry, extra: [{ status: person.status, event: person.event }, ...person.extra] };
+    } else {
+      person.extra.push(entry);
+    }
   });
 
   return Object.keys(days).map((key) => {
-    const people = days[key];
+    const people = Object.values(days[key]);
     const counts = {};
-    people.forEach(({ status }) => { counts[status] = (counts[status] || 0) + 1; });
+    people.forEach((person) => {
+      personStatuses(person).forEach((status) => { counts[status] = (counts[status] || 0) + 1; });
+    });
     return {
       id: 'day_' + key,
       start: key,
@@ -530,4 +543,9 @@ export function buildDaySummaries(events) {
       extendedProps: { type: 'daySummary', date: key, counts, people },
     };
   });
+}
+
+/** Every status of a day-summary person (the leading one first). */
+export function personStatuses(person) {
+  return [person.status, ...(person.extra || []).map(({ status }) => status)];
 }

@@ -1,13 +1,14 @@
 /**
  * Everyone's attendance for one day (opened from a day summary in the "All employees" month view).
  *
- *   <AttendanceDayModal day={{ date, people: [{ status, event }] }} onOpenPerson={(person) => ...} />
+ *   <AttendanceDayModal day={{ date, people: [{ status, event, extra }] }} onOpenPerson={(person) => ...} />
  *
- * A searchable, scrollable list grouped by status; clicking a person opens their detail modal.
+ * A searchable, scrollable list grouped by status, one row per person (a punch-in on a WFH day
+ * shows both chips); clicking a person opens their detail modal.
  */
 import { useEffect, useState } from 'react';
 import moment from 'moment';
-import { DAY_STATUS_LABELS, DAY_STATUS_ORDER } from './attendanceHelpers';
+import { DAY_STATUS_LABELS, DAY_STATUS_ORDER, personStatuses } from './attendanceHelpers';
 
 function initials(name) {
   if (!name) return '?';
@@ -39,13 +40,15 @@ export default function AttendanceDayModal({ day, onOpenPerson }) {
 
   const people = (day && day.people) || [];
   const counts = {};
-  people.forEach(({ status }) => { counts[status] = (counts[status] || 0) + 1; });
+  people.forEach((person) => {
+    personStatuses(person).forEach((status) => { counts[status] = (counts[status] || 0) + 1; });
+  });
 
   const term = search.trim().toLowerCase();
   const visible = people
-    .filter(({ status, event }) => {
-      if (statusFilter && status !== statusFilter) return false;
-      const name = (event.extendedProps.userName || '').toLowerCase();
+    .filter((person) => {
+      if (statusFilter && !personStatuses(person).includes(statusFilter)) return false;
+      const name = (person.event.extendedProps.userName || '').toLowerCase();
       return !term || name.includes(term);
     })
     .sort((a, b) => DAY_STATUS_ORDER.indexOf(a.status) - DAY_STATUS_ORDER.indexOf(b.status)
@@ -99,7 +102,11 @@ export default function AttendanceDayModal({ day, onOpenPerson }) {
                         <span className="att-day-avatar">{initials(name)}</span>
                         <span className="att-day-name">
                           <strong>{name}</strong>
-                          <span className="att-chip"><span className="att-dot"></span>{DAY_STATUS_LABELS[person.status]}</span>
+                          <span className="att-day-chips">
+                            {personStatuses(person).map((status) => (
+                              <span key={status} className={'att-chip att-' + status}><span className="att-dot"></span>{DAY_STATUS_LABELS[status]}</span>
+                            ))}
+                          </span>
                         </span>
                         {isAttendance ? (
                           <span className="att-day-times">
