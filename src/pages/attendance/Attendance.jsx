@@ -180,6 +180,8 @@ export default function Attendance() {
 
   /** Open the detail modal of one attendance / leave / absent record. */
   const openEventDetail = (data) => {
+    // A "+ more" day list (z-index 9999) would otherwise stay open on top of the modal
+    $('.att-calendar .fc-popover-close').trigger('click');
     if (data.type === 'attendance') {
       setAttendanceDetail(describeAttendance(data));
       $('#attendanceDetailModal').modal('show');
