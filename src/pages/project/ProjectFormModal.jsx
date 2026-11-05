@@ -102,6 +102,8 @@ export default function ProjectFormModal({
   const [templatesList, setTemplatesList] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  // Editing a project: imported tasks replace its tasks instead of being added to them
+  const [replaceExistingTasks, setReplaceExistingTasks] = useState(false);
   const [importedTasks, setImportedTasks] = useState([]);
   const [importedRowsStyle, setImportedRowsStyle] = useState('import');
   const [importedVisible, setImportedVisible] = useState(false);
@@ -612,6 +614,7 @@ export default function ProjectFormModal({
     excelFileRef.current.value = '';
     setSelectedTemplate('');
     setSaveAsTemplate(false);
+    setReplaceExistingTasks(false);
     excelFileData.current = null;
     excelFileName.current = '';
   };
@@ -955,9 +958,11 @@ export default function ProjectFormModal({
 
         uploadAttachments(projectId);
 
-        // Update project tasks
-        if (tasks && tasks.length > 0) {
-          // Delete existing tasks
+        // Imported tasks are added to the project's tasks (createBulk skips Task IDs it already
+        // has), or replace them when the user asked for that
+        if (tasks && tasks.length > 0 && !replaceExistingTasks) {
+          saveTasks(projectId, 'updated');
+        } else if (tasks && tasks.length > 0) {
           api.call('projectTasks.deleteByProject', projectId, (deleteError) => {
             if (deleteError) {
               console.error('Error deleting old tasks:', deleteError);
@@ -1185,6 +1190,9 @@ export default function ProjectFormModal({
                   onExcelFileChange={changeExcelFile}
                   saveAsTemplate={saveAsTemplate}
                   onSaveAsTemplateChange={setSaveAsTemplate}
+                  isEditing={!!editProjectId}
+                  replaceExistingTasks={replaceExistingTasks}
+                  onReplaceExistingTasksChange={setReplaceExistingTasks}
                   importedTasks={importedTasks}
                   importedVisible={importedVisible}
                   rowsStyle={importedRowsStyle} />

@@ -46,6 +46,9 @@ export default function ProjectImportTab({
   onExcelFileChange,
   saveAsTemplate,
   onSaveAsTemplateChange,
+  isEditing,
+  replaceExistingTasks,
+  onReplaceExistingTasksChange,
   importedTasks,
   importedVisible,
   rowsStyle
@@ -84,6 +87,15 @@ export default function ProjectImportTab({
                   Save uploaded Excel file as template for future use
                 </label>
               </div>
+              {isEditing && (
+                <div className="form-check mt-2">
+                  <input className="form-check-input" type="checkbox" id="replaceExistingTasks"
+                    checked={replaceExistingTasks} onChange={(event) => onReplaceExistingTasksChange(event.target.checked)} />
+                  <label className="form-check-label" htmlFor="replaceExistingTasks">
+                    Replace the project's existing tasks (deletes them) instead of adding to them
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -94,7 +106,11 @@ export default function ProjectImportTab({
         <h6 className="mb-3">Imported Tasks</h6>
         <div className="alert alert-info">
           <i className="fa fa-info-circle me-2"></i>
-          <span id="taskCount">{importedTasks.length}</span> tasks will be imported from the template.
+          <span id="taskCount">{importedTasks.length}</span> tasks will be imported from the template
+          {isEditing && (replaceExistingTasks
+            ? <>, <strong>replacing all of the project's current tasks</strong>.</>
+            : ' and added to the project\'s current tasks (Task IDs the project already has are skipped).')}
+          {!isEditing && '.'}
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-bordered" id="importedTasksTable" style={{ fontSize: '0.85rem' }}>

@@ -9,6 +9,7 @@
  * It renders its own create/edit and delete modals (#folderFormModal, #deleteFolderModal).
  */
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import FolderNode from './FolderNode';
@@ -180,9 +181,9 @@ export default function FolderTree({
         </div>
       </div>
 
-      {/* Include Modals */}
-      <FolderFormModal />
-      <DeleteFolderModal />
+      {/* Include Modals - on <body>: inside another modal (the project form) that modal's backdrop
+          would cover them and they could not be clicked */}
+      {createPortal(<><FolderFormModal /><DeleteFolderModal /></>, document.body)}
     </>
   );
 }
