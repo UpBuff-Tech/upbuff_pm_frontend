@@ -7,6 +7,7 @@ import moment from 'moment';
 import api from '../../api/client';
 import { currentUserId } from '../../lib/customFunctions';
 import ClientDashboardProjects, { NoProjects } from './ClientDashboardProjects';
+import ClientProjectOverview from './ClientProjectOverview';
 import { formatDate, badgeClass } from './utility';
 import { StatCardsSkeleton, ListSkeleton } from '../../components/skeleton/Skeleton';
 import PeriodFilter from '../../components/PeriodFilter';
@@ -196,6 +197,9 @@ export default function ClientDashboard() {
             <StatCard label="Completed" value={clientStats.completedProjects || 0} color="#71dd3720" icon="bx bx-check-circle text-success" />
             <StatCard label="On Hold" value={clientStats.onHoldProjects || 0} color="#ffab0020" icon="bx bx-pause-circle text-warning" />
           </div>
+
+          {/* Each project at a glance (the Gantt chart's summary card) */}
+          <ClientProjectOverview clientName={clientDisplayName} />
 
           {/* Activity in the chosen period */}
           <h6 className="text-muted text-uppercase small fw-semibold mb-2">Activity · {period.label.toLowerCase()}</h6>
