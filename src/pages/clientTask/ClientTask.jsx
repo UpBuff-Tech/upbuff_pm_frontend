@@ -113,6 +113,10 @@ export default function ClientTask() {
           seen.add(key);
           return true;
         });
+        // Shown project by project in plan order: 1.1, 1.2 … 1.10, 2.1 (tasks without an ID last)
+        unique.sort((a, b) => String(a.projectId).localeCompare(String(b.projectId))
+          || (!a.taskId) - (!b.taskId)
+          || String(a.taskId || '').localeCompare(String(b.taskId || ''), undefined, { numeric: true }));
         setAllTasks(unique);
       } else if (err) {
         toastr.error('Failed to load tasks');
