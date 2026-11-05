@@ -35,6 +35,8 @@ const EMPTY_VALUES = {
   duration: '',
   responsibility: '',
   status: 'Pending',
+  // 'external': the client sees it in the plan; 'internal': only the team does
+  visibility: 'external',
   baselineStart: '',
   baselineFinish: ''
 };
@@ -75,6 +77,8 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
   // plugin has been rebuilt on the new options (undefined = leave the selection alone).
   const [dependencies, setDependencies] = useState({ options: [], selected: undefined, loaded: false });
   const [users, setUsers] = useState({ options: [], selected: undefined, loaded: false });
+  // Phases already in the project (offered in the Phase/Activity field)
+  const projectPhases = [...new Set(dependencies.options.map((task) => (task.phase || '').trim()).filter(Boolean))];
 
   const changeValues = (changes) => setValues((old) => ({ ...old, ...changes }));
 
@@ -185,6 +189,7 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
         duration: task.duration || '',
         responsibility: task.responsibility || '',
         status: task.status || 'Pending',
+        visibility: task.visibility === 'internal' ? 'internal' : 'external',
         baselineStart: formatDateForInput(task.baselineStart),
         baselineFinish: formatDateForInput(task.baselineFinish)
       });
@@ -264,6 +269,7 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
       taskId: String(values.taskId).trim(),
       taskName: values.taskName.trim(),
       phase: values.phase.trim(),
+      visibility: values.visibility,
       duration: duration,
       dependencies: dependenciesString,
       responsibility: values.responsibility.trim(),
@@ -373,7 +379,31 @@ export default function ProjectTaskFormModal({ onTasksReloaded }) {
                 <div className="col-md-12 mb-3">
                   <label className="form-label" htmlFor="taskPhaseInput">Phase/Activity</label>
                   <input type="text" className="form-control" id="taskPhaseInput" placeholder="e.g., Phase 1: Preparation"
+                    list="taskPhaseOptions" autoComplete="off"
                     value={values.phase} onChange={(event) => changeValues({ phase: event.target.value })} />
+                  {/* The project's phases, so a task joins an existing phase of the plan */}
+                  <datalist id="taskPhaseOptions">
+                    {projectPhases.map((phase) => <option key={phase} value={phase} />)}
+                  </datalist>
+                </div>
+
+                {/* Visibility */}
+                <div className="col-md-12 mb-3">
+                  <label className="form-label d-block">Visibility</label>
+                  <div className="form-check form-check-inline">
+                    <input className="form-check-input" type="radio" name="taskVisibility" id="taskVisibilityExternal"
+                      checked={values.visibility === 'external'} onChange={() => changeValues({ visibility: 'external' })} />
+                    <label className="form-check-label" htmlFor="taskVisibilityExternal">
+                      <i className="bx bx-globe text-success me-1"></i>External (visible to client, in its phase of the plan)
+                    </label>
+                  </div>
+                  <div className="form-check form-check-inline">
+                    <input className="form-check-input" type="radio" name="taskVisibility" id="taskVisibilityInternal"
+                      checked={values.visibility === 'internal'} onChange={() => changeValues({ visibility: 'internal' })} />
+                    <label className="form-check-label" htmlFor="taskVisibilityInternal">
+                      <i className="bx bx-lock-alt text-warning me-1"></i>Internal (only our team sees it)
+                    </label>
+                  </div>
                 </div>
 
                 {/* Duration */}

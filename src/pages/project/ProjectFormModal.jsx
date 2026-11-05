@@ -630,8 +630,9 @@ export default function ProjectFormModal({
     setExistingVisible(false);
     setNoDocumentsVisible(true);
 
-    // Reset the other values
+    // Reset the other values (the Tasks tab still showed the last project opened)
     setImportedTasks([]);
+    showFormTasks([]);
     displayAllAttachments([]);
     setSelectedFolderId(null);
     setSelectedFolderPath(ROOT_FOLDER);
@@ -736,24 +737,17 @@ export default function ProjectFormModal({
 
         // Load tasks from ProjectTasks collection
         api.call('projectTasks.getByProject', projectId, (taskError, tasks) => {
+          // The project's tasks go in the Tasks tab only. The Import tab stays empty: whatever is
+          // in it is saved as new tasks when the project is saved, so the project's own tasks
+          // must never be put there.
+          setImportedVisible(false);
+          setImportedTasks([]);
           if (taskError) {
             console.error('Error loading tasks:', taskError);
-            setImportedVisible(false);
-            setImportedTasks([]);
-            setTasksCount(0);
+            showFormTasks([]);
             return;
           }
-
-          if (tasks && tasks.length > 0) {
-            setImportedVisible(true);
-            setImportedTasks(tasks);
-            setImportedRowsStyle('project');
-            showFormTasks(tasks);
-          } else {
-            setImportedVisible(false);
-            setImportedTasks([]);
-            showFormTasks([]);
-          }
+          showFormTasks(tasks || []);
 
           // Hide loader after all data is loaded
           hideModalLoader('#projectFormModal');

@@ -43,7 +43,14 @@ function TaskRow({ task, index, tasks, rowsStyle, onDeleteTask }) {
       ) : (
         <td className="drag-handle" style={{ cursor: 'move' }}><i className="fa fa-bars text-muted"></i></td>
       )}
-      <td>{task.taskId || '-'}</td>
+      <td>
+        {task.taskId || '-'}
+        {task.visibility === 'internal' && (
+          <span className="badge bg-label-warning d-block mt-1" title="Internal - not shown to the client">
+            <i className="bx bx-lock-alt"></i> Internal
+          </span>
+        )}
+      </td>
       <td>{task.phase || '-'}</td>
       <td>{task.taskName || '-'}</td>
       <td>{task.duration || (full ? 0 : '-')}</td>

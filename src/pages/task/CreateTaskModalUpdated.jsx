@@ -24,7 +24,8 @@ const TICKET_PRIORITY_BADGE = {
   low: 'bg-success'
 };
 
-const EMPTY_TEXT_FIELDS = { taskName: '', phase: '', duration: '', responsibility: '' };
+// visibility 'external': the client sees the task in the project plan; 'internal': only the team does
+const EMPTY_TEXT_FIELDS = { taskName: '', phase: '', duration: '', responsibility: '', visibility: 'external' };
 
 function projectOptionLabel(project) {
   return project.clientName ? `${project.name} (${project.clientName})` : project.name;
@@ -268,6 +269,7 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
       taskName,
       requestType,
       phase: textFields.phase.trim() || '',
+      visibility: textFields.visibility,
       duration,
       dependencies: selectedDependencies.join(', '),
       responsibility: textFields.responsibility.trim() || '',
@@ -485,6 +487,25 @@ export default function CreateTaskModalUpdated({ board, openRef }) {
                   <textarea className="form-control" id="createTaskPhase" rows="2"
                     placeholder="Enter phase/activity details..."
                     value={textFields.phase} onChange={(event) => setTextField('phase', event.target.value)}></textarea>
+                </div>
+
+                {/* Visibility */}
+                <div className="col-md-12 mb-3">
+                  <label className="form-label d-block">Visibility</label>
+                  <div className="form-check form-check-inline">
+                    <input className="form-check-input" type="radio" name="createTaskVisibility" id="createTaskVisibilityExternal"
+                      checked={textFields.visibility === 'external'} onChange={() => setTextField('visibility', 'external')} />
+                    <label className="form-check-label" htmlFor="createTaskVisibilityExternal">
+                      <i className="bx bx-globe text-success me-1"></i>External (visible to client, in its phase of the plan)
+                    </label>
+                  </div>
+                  <div className="form-check form-check-inline">
+                    <input className="form-check-input" type="radio" name="createTaskVisibility" id="createTaskVisibilityInternal"
+                      checked={textFields.visibility === 'internal'} onChange={() => setTextField('visibility', 'internal')} />
+                    <label className="form-check-label" htmlFor="createTaskVisibilityInternal">
+                      <i className="bx bx-lock-alt text-warning me-1"></i>Internal (only our team sees it)
+                    </label>
+                  </div>
                 </div>
               </div>
             </form>
