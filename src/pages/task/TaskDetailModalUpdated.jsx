@@ -110,6 +110,7 @@ function formFieldsFromTask(task) {
     editTaskName: inputText(task && task.taskName),
     editRequestType: inputText(task && task.requestType),
     editPhase: inputText(task && task.phase),
+    editVisibility: (task && task.visibility) || 'external',
     editDuration: inputText(task && task.duration),
     editResponsibility: inputText(task && task.responsibility),
     editStatus: (task && task.status) || 'Pending',
@@ -287,6 +288,11 @@ export default function TaskDetailModalUpdated({ board }) {
     // unset rather than logging a "-" → "-" change on every save.
     const requestType = fieldValue('editRequestType');
     if (requestType) updateData.requestType = requestType;
+
+    // Only sent when changed: a task saved before visibility existed reads as
+    // external, and shouldn't log a "-" → "external" change on every save.
+    const visibility = formFields.editVisibility;
+    if (visibility !== ((detail && detail.visibility) || 'external')) updateData.visibility = visibility;
 
     if (!updateData.taskName) {
       toastr.error('Task name is required');
@@ -578,6 +584,25 @@ export default function TaskDetailModalUpdated({ board }) {
                           <textarea className="form-control form-control-sm" id="editPhase" rows="3"
                             placeholder="Enter phase/activity details..."
                             value={formFields.editPhase} onChange={handleFieldChange}></textarea>
+                        </div>
+                        <div className="col-md-12">
+                          <label className="form-label td-label d-block">Visibility</label>
+                          <div className="form-check form-check-inline">
+                            <input className="form-check-input" type="radio" name="editVisibility" id="editVisibilityExternal"
+                              checked={formFields.editVisibility === 'external'}
+                              onChange={() => setFormFields(current => ({ ...current, editVisibility: 'external' }))} />
+                            <label className="form-check-label" htmlFor="editVisibilityExternal">
+                              <i className="bx bx-globe text-success me-1"></i>External (visible to client, in its phase of the plan)
+                            </label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input className="form-check-input" type="radio" name="editVisibility" id="editVisibilityInternal"
+                              checked={formFields.editVisibility === 'internal'}
+                              onChange={() => setFormFields(current => ({ ...current, editVisibility: 'internal' }))} />
+                            <label className="form-check-label" htmlFor="editVisibilityInternal">
+                              <i className="bx bx-lock-alt text-warning me-1"></i>Internal (only our team sees it)
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>
