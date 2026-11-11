@@ -35,7 +35,9 @@ function TaskRow({ task, index, tasks, rowsStyle, onDeleteTask }) {
   };
 
   return (
-    <tr data-task-id={task._id} data-order={full ? (task.order || index) : undefined}>
+    <tr data-task-id={task._id} data-order={full ? (task.order || index) : undefined}
+      title="Double-click to edit"
+      onDoubleClick={(event) => { if (!event.target.closest('button, .drag-handle')) editTask(event); }}>
       {full ? (
         <td className="drag-handle" style={{ cursor: 'move', textAlign: 'center' }}>
           <i className="fa fa-bars"></i>
@@ -60,7 +62,7 @@ function TaskRow({ task, index, tasks, rowsStyle, onDeleteTask }) {
       <td>{task.responsibility || '-'}</td>
       <td>{full ? <small>{dependenciesText}</small> : dependenciesText}</td>
       <td><span className={`badge bg-${statusBadge}`}>{task.status || 'Pending'}</span></td>
-      <td>
+      <td className="ptt-actions">
         <button className="btn btn-sm btn-outline-primary edit-task-btn" data-task-id={task._id} title="Edit" onClick={editTask}>
           <i className="fa fa-pencil"></i>
         </button>
@@ -119,14 +121,15 @@ export default function ProjectTasksTab({ tasks, rowsStyle, exportConfig, onDele
       </div>
 
       {/* Tasks List with Drag & Drop */}
-      <div className="table-responsive">
-        <table className="table table-bordered table-sm">
+      {/* Scrolls inside its own box: the header stays on top and the Actions column stays on the right */}
+      <div className="project-tasks-scroll">
+        <table className="table table-bordered table-sm mb-0">
           <thead className="table-light">
             <tr>
               <th style={{ width: '30px' }}></th>
               <th style={{ width: '80px' }}>ID</th>
-              <th style={{ width: '150px' }}>Phase/Activity</th>
-              <th>Task Name</th>
+              <th style={{ width: '150px', minWidth: '150px' }}>Phase/Activity</th>
+              <th style={{ minWidth: '280px' }}>Task Name</th>
               <th style={{ width: '100px' }}>Duration</th>
               <th style={{ width: '110px' }}>Baseline Start</th>
               <th style={{ width: '110px' }}>Baseline Finish</th>
@@ -134,7 +137,7 @@ export default function ProjectTasksTab({ tasks, rowsStyle, exportConfig, onDele
               <th style={{ width: '120px' }}>Responsibility</th>
               <th style={{ width: '150px' }}>Dependencies</th>
               <th style={{ width: '120px' }}>Status</th>
-              <th style={{ width: '120px' }}>Actions</th>
+              <th className="ptt-actions" style={{ width: '120px' }}>Actions</th>
             </tr>
           </thead>
           <tbody id="projectTasksList" ref={listRef}>

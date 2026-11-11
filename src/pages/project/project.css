@@ -1364,3 +1364,31 @@
 }
 
 .ptd-icon-btn:hover { background: var(--fx-primary-soft); color: var(--fx-primary); }
+
+/* Project form > Tasks tab: the table scrolls in its own box so the header row and the
+   Actions column stay in view while scrolling (no scrolling down to find the side scrollbar) */
+.project-tasks-scroll {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--bs-border-color);
+}
+
+.project-tasks-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.project-tasks-scroll .ptt-actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  white-space: nowrap;
+  background: var(--fx-surface, #fff);
+  box-shadow: inset 1px 0 0 var(--bs-border-color);
+}
+
+.project-tasks-scroll thead th.ptt-actions { z-index: 3; }
+
+.project-tasks-scroll tbody tr { cursor: pointer; }
+.project-tasks-scroll tbody tr:hover > td { background: var(--fx-surface-hover); }
